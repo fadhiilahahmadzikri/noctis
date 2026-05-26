@@ -1,6 +1,6 @@
 import type { ProjectDto, SegmentDto, JobDto, DetectionConfig } from "../types/dtos";
 
-const BASE_URL = "http://localhost:18420";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:18420";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
