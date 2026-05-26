@@ -9,47 +9,25 @@ import { useAppStore } from "./stores/appStore";
 import { apiClient } from "./services/apiClient";
 
 function App() {
-  const { currentPage, setCurrentPage, sidecarReady, setSidecarReady } = useAppStore();
+  const { currentPage, setCurrentPage, setSidecarReady } = useAppStore();
 
   useEffect(() => {
     const setup = async () => {
       const unlisten = await listen<{ port: number }>("sidecar-ready", async () => {
-        try {
-          await apiClient.health();
-          setSidecarReady(true);
-        } catch {
-          // Sidecar signaled ready but health check failed — retry
-          setTimeout(async () => {
-            try {
-              await apiClient.health();
-              setSidecarReady(true);
-            } catch { /* will remain not ready */ }
-          }, 1000);
-        }
+        try { await apiClient.health(); setSidecarReady(true); } catch {}
       });
       return unlisten;
     };
-
-    // Also try direct health check (for dev mode without Tauri)
     apiClient.health().then(() => setSidecarReady(true)).catch(() => {});
-
     const cleanup = setup();
     return () => { cleanup.then((fn) => fn()); };
   }, [setSidecarReady]);
 
   return (
     <AppShell currentPage={currentPage} onNavigate={setCurrentPage}>
-      {!sidecarReady && (
-        <div className="flex items-center justify-center h-full">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span className="text-zinc-500 text-sm">Connecting to backend...</span>
-          </div>
-        </div>
-      )}
-      {sidecarReady && currentPage === "import" && <ImportPage />}
-      {sidecarReady && currentPage === "review" && <ReviewPage />}
-      {sidecarReady && currentPage === "export" && <ExportPage />}
+      {currentPage === "import" && <ImportPage />}
+      {currentPage === "review" && <ReviewPage />}
+      {currentPage === "export" && <ExportPage />}
     </AppShell>
   );
 }

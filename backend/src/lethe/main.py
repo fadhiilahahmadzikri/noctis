@@ -1,7 +1,10 @@
 """FastAPI application entry point."""
 
-from fastapi import FastAPI
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from lethe.presentation.routes import detect, health, project, segment, trim
 from lethe.presentation.ws import progress
@@ -13,11 +16,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:1420",
-            "http://localhost:5173",
-            "tauri://localhost",
-        ],
+        allow_origins=["*"],
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -28,6 +27,14 @@ def create_app() -> FastAPI:
     app.include_router(segment.router)
     app.include_router(trim.router)
     app.include_router(progress.router)
+
+    @app.get("/file")
+    async def serve_file(path: str = Query(...)) -> FileResponse:
+        """Serve local file for video playback."""
+        file_path = Path(path)
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+        return FileResponse(str(file_path), media_type="video/mp4")
 
     return app
 
