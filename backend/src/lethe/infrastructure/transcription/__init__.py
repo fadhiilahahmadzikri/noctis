@@ -26,7 +26,7 @@ class HuggingFaceTranscriber:
     """
 
     MODEL = "openai/whisper-large-v3-turbo"
-    API_URL = f"https://api-inference.huggingface.co/models/{MODEL}"
+    API_URL = f"https://router.huggingface.co/hf-inference/models/{MODEL}"
 
     def __init__(self, api_token: str) -> None:
         self._token = api_token
