@@ -223,6 +223,11 @@ __marimo__/
 assets/tester/
 .agent/.skills/python-pattren/
 .agent/.skills/tauri-skill-v2/
+backend/dist/
+backend/build/
+backend/*.spec
+frontend/src-tauri/binaries/*.exe
+frontend/src-tauri/target/
 
 # ===== Node.js =====
 node_modules/
