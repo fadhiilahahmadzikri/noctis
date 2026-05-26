@@ -1,44 +1,56 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Minus, Square, X } from "lucide-react";
+import { Minus, Square, X, Undo2, Redo2 } from "lucide-react";
 import { useAppStore } from "../stores/appStore";
+import { useProjectStore } from "../stores/projectStore";
+import { useHistoryStore } from "../stores/historyStore";
 
 export function Titlebar() {
   const appWindow = getCurrentWindow();
   const sidecarReady = useAppStore((s) => s.sidecarReady);
+  const videoPath = useProjectStore((s) => s.videoPath);
+  const setSegments = useProjectStore((s) => s.setSegments);
+  const { undo, redo, canUndo, canRedo } = useHistoryStore();
+
+  const projectName = videoPath ? videoPath.split(/[/\\]/).pop() : "Lethe";
 
   return (
-    <header className="h-8 flex items-center justify-between bg-[#0a0a0a] border-b border-zinc-800 select-none fixed top-0 left-0 right-0 z-50">
-      <div
-        className="flex-1 h-full flex items-center pl-3 gap-2"
-        data-tauri-drag-region
-      >
-        <span className="text-xs font-medium text-zinc-400 pointer-events-none">
-          Lethe
-        </span>
-        <div
-          className={`w-1.5 h-1.5 rounded-full pointer-events-none ${
-            sidecarReady ? "bg-emerald-500" : "bg-amber-500 animate-pulse"
-          }`}
-        />
+    <header className="h-9 flex items-center bg-[#1a1a1a] border-b border-zinc-800/50 select-none shrink-0">
+      {/* Left: drag + logo */}
+      <div className="flex items-center gap-2 px-3 h-full" data-tauri-drag-region>
+        <div className={`w-2 h-2 rounded-full ${sidecarReady ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`} />
+        <span className="text-[11px] font-semibold text-zinc-300 pointer-events-none">{projectName}</span>
       </div>
+
+      {/* Center: undo/redo */}
+      <div className="flex-1 flex items-center justify-center gap-1" data-tauri-drag-region>
+        <button
+          onClick={() => { const p = undo(); if (p) setSegments(p); }}
+          disabled={!canUndo()}
+          className="p-1.5 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 disabled:opacity-20 transition-colors"
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo2 size={13} />
+        </button>
+        <button
+          onClick={() => { const n = redo(); if (n) setSegments(n); }}
+          disabled={!canRedo()}
+          className="p-1.5 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 disabled:opacity-20 transition-colors"
+          title="Redo (Ctrl+Y)"
+        >
+          <Redo2 size={13} />
+        </button>
+      </div>
+
+      {/* Right: window controls */}
       <div className="flex h-full">
-        <button
-          onClick={() => appWindow.minimize()}
-          className="w-11 h-full flex items-center justify-center text-zinc-400 hover:bg-zinc-800 transition-colors"
-        >
-          <Minus size={14} />
+        <button onClick={() => appWindow.minimize()} className="w-10 h-full flex items-center justify-center text-zinc-500 hover:bg-zinc-700/50 transition-colors">
+          <Minus size={13} />
         </button>
-        <button
-          onClick={() => appWindow.toggleMaximize()}
-          className="w-11 h-full flex items-center justify-center text-zinc-400 hover:bg-zinc-800 transition-colors"
-        >
-          <Square size={12} />
+        <button onClick={() => appWindow.toggleMaximize()} className="w-10 h-full flex items-center justify-center text-zinc-500 hover:bg-zinc-700/50 transition-colors">
+          <Square size={11} />
         </button>
-        <button
-          onClick={() => appWindow.close()}
-          className="w-11 h-full flex items-center justify-center text-zinc-400 hover:bg-red-600 hover:text-white transition-colors"
-        >
-          <X size={14} />
+        <button onClick={() => appWindow.close()} className="w-10 h-full flex items-center justify-center text-zinc-500 hover:bg-red-600 hover:text-white transition-colors">
+          <X size={13} />
         </button>
       </div>
     </header>

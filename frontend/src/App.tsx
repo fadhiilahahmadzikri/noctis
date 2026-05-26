@@ -1,15 +1,16 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import "./index.css";
-import { AppShell } from "./components/AppShell";
+import { Titlebar } from "./components/Titlebar";
+import { EditorLayout } from "./components/EditorLayout";
 import { ImportPage } from "./pages/ImportPage";
-import { ReviewPage } from "./pages/ReviewPage";
-import { ExportPage } from "./pages/ExportPage";
 import { useAppStore } from "./stores/appStore";
+import { useProjectStore } from "./stores/projectStore";
 import { apiClient } from "./services/apiClient";
 
 function App() {
-  const { currentPage, setCurrentPage, setSidecarReady } = useAppStore();
+  const { setSidecarReady } = useAppStore();
+  const projectId = useProjectStore((s) => s.projectId);
 
   useEffect(() => {
     const setup = async () => {
@@ -24,11 +25,12 @@ function App() {
   }, [setSidecarReady]);
 
   return (
-    <AppShell currentPage={currentPage} onNavigate={setCurrentPage}>
-      {currentPage === "import" && <ImportPage />}
-      {currentPage === "review" && <ReviewPage />}
-      {currentPage === "export" && <ExportPage />}
-    </AppShell>
+    <div className="h-screen w-screen overflow-hidden flex flex-col">
+      <Titlebar />
+      <div className="flex-1 min-h-0">
+        {projectId ? <EditorLayout /> : <ImportPage />}
+      </div>
+    </div>
   );
 }
 
