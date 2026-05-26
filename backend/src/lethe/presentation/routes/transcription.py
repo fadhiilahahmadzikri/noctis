@@ -29,7 +29,7 @@ def _get_hf_token() -> str:
     if token:
         return token
     # Try reading from .env file in backend dir
-    env_file = Path(__file__).resolve().parents[3] / ".env"
+    env_file = Path(__file__).resolve().parents[4] / ".env"
     if env_file.exists():
         for line in env_file.read_text().splitlines():
             if line.startswith("HF_TOKEN="):
