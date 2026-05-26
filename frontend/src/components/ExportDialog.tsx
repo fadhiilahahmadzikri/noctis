@@ -5,6 +5,7 @@ import { apiClient } from "../services/apiClient";
 interface ExportDialogProps {
   projectId: string;
   videoPath: string;
+  captions: {text: string; start_ms: number; end_ms: number}[];
   onClose: () => void;
 }
 
@@ -15,7 +16,7 @@ const RESOLUTIONS = [
   { label: "480p", value: "480", desc: "854×480" },
 ] as const;
 
-export function ExportDialog({ projectId, videoPath, onClose }: ExportDialogProps) {
+export function ExportDialog({ projectId, videoPath, captions, onClose }: ExportDialogProps) {
   const [resolution, setResolution] = useState<string>("original");
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -39,7 +40,7 @@ export function ExportDialog({ projectId, videoPath, onClose }: ExportDialogProp
     }, 500);
 
     try {
-      await apiClient.submitTrim(projectId, out);
+      await apiClient.submitTrim(projectId, out, captions);
       clearInterval(interval);
       setProgress(100);
       setDone(true);

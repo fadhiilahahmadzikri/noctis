@@ -41,9 +41,9 @@ export const apiClient = {
       body: JSON.stringify({ is_removed: isRemoved }),
     }),
 
-  submitTrim: (projectId: string, outputPath: string) =>
+  submitTrim: (projectId: string, outputPath: string, captions: {text: string; start_ms: number; end_ms: number}[] = []) =>
     request<JobDto>(`/project/${projectId}/trim`, {
       method: "POST",
-      body: JSON.stringify({ output_path: outputPath }),
+      body: JSON.stringify({ output_path: outputPath, captions }),
     }),
 };
