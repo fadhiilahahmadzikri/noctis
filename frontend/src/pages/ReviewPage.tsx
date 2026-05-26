@@ -69,6 +69,13 @@ export function ReviewPage() {
     }
   }, [projectId, segments, updateSegment]);
 
+  const handleTrimSegment = useCallback((segmentId: string, newStartMs: number, newEndMs: number) => {
+    // Non-destructive: update local state only (metadata edit)
+    const seg = segments.find((s) => s.id === segmentId);
+    if (!seg) return;
+    updateSegment({ ...seg, start_ms: Math.round(newStartMs), end_ms: Math.round(newEndMs) });
+  }, [segments, updateSegment]);
+
   const handleExport = useCallback(async () => {
     if (!projectId || !videoPath) return;
     setExporting(true);
@@ -170,8 +177,10 @@ export function ReviewPage() {
             segments={segments}
             duration={duration}
             currentTime={currentTime}
+            projectId={projectId}
             onSeek={setCurrentTime}
             onToggleSegment={handleToggle}
+            onTrimSegment={handleTrimSegment}
           />
         )}
       </div>
