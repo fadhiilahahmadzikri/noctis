@@ -11,6 +11,8 @@
     "core:window:allow-start-dragging",
     "core:window:allow-set-title",
     "dialog:allow-open",
+    "fs:allow-read-file",
+    "fs:default",
     {
       "identifier": "shell:allow-execute",
       "allow": [

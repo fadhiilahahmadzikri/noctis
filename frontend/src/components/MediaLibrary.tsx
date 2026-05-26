@@ -33,20 +33,16 @@ export function MediaLibrary() {
       try {
         const fileName = filePath.split(/[/\\]/).pop() || "video.mp4";
 
-        // Read file bytes and upload to server
-        const fileBytes = await fetch(`http://localhost:18420/file?path=${encodeURIComponent(filePath)}`).then(r => r.blob()).catch(() => null);
+        // Read file from local disk via Tauri fs plugin
+        const { readFile } = await import("@tauri-apps/plugin-fs");
+        const bytes = await readFile(filePath);
+        const file = new File([bytes], fileName);
 
-        let serverPath = filePath;
-        if (fileBytes) {
-          // Upload to server
-          const file = new File([fileBytes], fileName);
-          const uploaded = await apiClient.uploadVideo(file);
-          serverPath = uploaded.path;
-        } else {
-          // Fallback: try direct path (local backend)
-        }
+        // Upload to server
+        const uploaded = await apiClient.uploadVideo(file);
 
-        const project = await apiClient.loadProject(serverPath);
+        // Load project using server-side path
+        const project = await apiClient.loadProject(uploaded.path);
         const asset: MediaAsset = {
           id: project.project_id,
           path: project.video_path,
