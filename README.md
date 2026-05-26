@@ -9,6 +9,8 @@ pinned: false
 
 <div align="center">
 
+<img src="https://raw.githubusercontent.com/fadhiilahahmadzikri/lethe/main/assets/logo/lethe.png" width="120" alt="Lethe Logo" />
+
 # 🎬 Lethe
 
 **Desktop application for removing filler words and silence from video recordings.**
