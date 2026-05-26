@@ -5,20 +5,14 @@ from uuid import UUID
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from lethe.infrastructure.di.container import container
 
 router = APIRouter(prefix="/project", tags=["transcription"])
 
 
-class TranscriptChunkResponse:
-    pass
-
-
-from pydantic import BaseModel
-
-
-class TranscriptChunkResponse(BaseModel):  # type: ignore[no-redef]
+class TranscriptChunkResponse(BaseModel):
     text: str
     start_ms: int
     end_ms: int
@@ -29,12 +23,26 @@ class TranscribeResponse(BaseModel):
     full_text: str
 
 
+def _get_hf_token() -> str:
+    """Read HF_TOKEN from env or .env file."""
+    token = os.environ.get("HF_TOKEN", "")
+    if token:
+        return token
+    # Try reading from .env file in backend dir
+    env_file = Path(__file__).resolve().parents[3] / ".env"
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            if line.startswith("HF_TOKEN="):
+                return line.split("=", 1)[1].strip()
+    return ""
+
+
 @router.post("/{project_id}/transcribe", response_model=TranscribeResponse)
 async def transcribe_project(project_id: str) -> TranscribeResponse:
-    """Transcribe video audio using HuggingFace Whisper API. Token from HF_TOKEN env."""
-    token = os.environ.get("HF_TOKEN", "")
+    """Transcribe video audio using HuggingFace Whisper API."""
+    token = _get_hf_token()
     if not token:
-        raise HTTPException(status_code=400, detail="HF_TOKEN environment variable not set")
+        raise HTTPException(status_code=400, detail="HF_TOKEN not set. Add to backend/.env file.")
 
     try:
         pid = UUID(project_id)
@@ -58,9 +66,6 @@ async def transcribe_project(project_id: str) -> TranscribeResponse:
         raise HTTPException(status_code=502, detail=str(e))
 
     return TranscribeResponse(
-        chunks=[
-            TranscriptChunkResponse(text=c.text, start_ms=c.start_ms, end_ms=c.end_ms)
-            for c in chunks
-        ],
+        chunks=[TranscriptChunkResponse(text=c.text, start_ms=c.start_ms, end_ms=c.end_ms) for c in chunks],
         full_text=" ".join(c.text for c in chunks),
     )

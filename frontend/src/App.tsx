@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import "./index.css";
 import { Titlebar } from "./components/Titlebar";
 import { EditorLayout } from "./components/EditorLayout";
+import { ToastContainer } from "./components/Toast";
 import { useAppStore } from "./stores/appStore";
 import { apiClient } from "./services/apiClient";
 
@@ -27,6 +28,7 @@ function App() {
       <div className="flex-1 min-h-0">
         <EditorLayout />
       </div>
+      <ToastContainer />
     </div>
   );
 }
