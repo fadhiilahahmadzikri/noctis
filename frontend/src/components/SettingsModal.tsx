@@ -8,12 +8,13 @@ interface SettingsModalProps {
 
 export function SettingsModal({ onClose }: SettingsModalProps) {
   const [apiKey, setApiKey] = useState("");
+  const [hasKey, setHasKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     fetch("http://127.0.0.1:18420/settings")
       .then((r) => r.json())
-      .then((d) => { if (d.groq_api_key) setApiKey(d.groq_api_key); })
+      .then((d) => { if (d.groq_api_key && d.groq_api_key !== "") setHasKey(true); })
       .catch(() => {});
   }, []);
 
@@ -49,14 +50,14 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               type="password"
               value={apiKey}
               onChange={(e) => { setApiKey(e.target.value); setSaved(false); }}
-              placeholder="gsk_..."
+              placeholder={hasKey ? "Key saved ✓ (paste new to replace)" : "gsk_..."}
               className="w-full px-3 py-2 rounded-lg text-xs bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-accent/50"
             />
             <p className="text-[9px] text-zinc-600">Free at console.groq.com/keys — enables auto-caption feature.</p>
           </div>
           <button
             onClick={handleSave}
-            disabled={!apiKey.trim() || apiKey.includes("...")}
+            disabled={!apiKey.trim()}
             className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-lg bg-accent text-white hover:bg-accent/80 disabled:opacity-40 transition-colors"
           >
             {saved ? <><Check size={12} /> Saved</> : "Save"}
