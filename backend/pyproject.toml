@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "lethe-backend"
+name = "Noctis-backend"
 version = "0.1.0"
-description = "Lethe backend - video filler and silence removal service"
+description = "Noctis backend - video filler and silence removal service"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
@@ -33,7 +33,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lethe"]
+packages = ["src/noctis"]
 
 [tool.uv]
 package = true

@@ -17,7 +17,7 @@
       "identifier": "shell:allow-execute",
       "allow": [
         {
-          "name": "binaries/lethe-server",
+          "name": "binaries/Noctis-server",
           "sidecar": true,
           "args": true
         }

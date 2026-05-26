@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Lethe",
+  "productName": "Noctis",
   "version": "1.0.0",
-  "identifier": "com.lethe.app",
+  "identifier": "com.Noctis.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Lethe",
+        "title": "Noctis",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
@@ -37,16 +37,16 @@
       "icons/icon.ico"
     ],
     "resources": [],
-    "copyright": "© 2026 Lethe",
+    "copyright": "© 2026 Noctis",
     "category": "Video",
     "shortDescription": "Remove silence and filler from video recordings",
-    "longDescription": "Lethe is a desktop video editor that automatically detects and removes silence from recordings. Features include timeline editing, auto-captions via Whisper, and non-destructive workflow.",
+    "longDescription": "Noctis is a desktop video editor that automatically detects and removes silence from recordings. Features include timeline editing, auto-captions via Whisper, and non-destructive workflow.",
     "fileAssociations": [
       {
-        "ext": ["lethe"],
-        "name": "Lethe Project",
-        "description": "Lethe video project file",
-        "mimeType": "application/x-lethe-project",
+        "ext": ["Noctis"],
+        "name": "Noctis Project",
+        "description": "Noctis video project file",
+        "mimeType": "application/x-Noctis-project",
         "role": "Editor"
       }
     ],
@@ -59,6 +59,6 @@
         "sidebarImage": null
       }
     },
-    "externalBin": ["binaries/lethe-server"]
+    "externalBin": ["binaries/Noctis-server"]
   }
 }

@@ -23,7 +23,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             if let Some(path) = argv.get(1) {
-                if path.ends_with(".lethe") {
+                if path.ends_with(".Noctis") {
                     let _ = app.emit("file-opened", path.clone());
                 }
             }
@@ -32,9 +32,9 @@ pub fn run() {
             }
         }))
         .setup(|app| {
-            // Cold start: check argv for .lethe file
+            // Cold start: check argv for .Noctis file
             let args: Vec<String> = std::env::args().collect();
-            if let Some(path) = args.get(1).filter(|p| p.ends_with(".lethe")) {
+            if let Some(path) = args.get(1).filter(|p| p.ends_with(".Noctis")) {
                 *app.state::<LaunchFile>().0.lock().unwrap() = Some(path.clone());
             }
 
@@ -42,7 +42,7 @@ pub fn run() {
             let handle = app.handle().clone();
             let (mut rx, child) = app
                 .shell()
-                .sidecar("lethe-server")
+                .sidecar("Noctis-server")
                 .expect("failed to create sidecar")
                 .spawn()
                 .expect("failed to spawn sidecar");

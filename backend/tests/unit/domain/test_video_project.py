@@ -1,7 +1,7 @@
 """Tests for VideoProject entity."""
 
-from lethe.domain.entities.segment import Segment, SegmentType
-from lethe.domain.entities.video_project import VideoProject
+from noctis.domain.entities.segment import Segment, SegmentType
+from noctis.domain.entities.video_project import VideoProject
 
 
 def test_get_kept_segments() -> None:

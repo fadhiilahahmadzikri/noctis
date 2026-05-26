@@ -14,13 +14,13 @@ export function Titlebar() {
   const { undo, redo, canUndo, canRedo } = useHistoryStore();
   const [showSettings, setShowSettings] = useState(false);
 
-  const projectName = videoPath ? videoPath.split(/[/\\]/).pop() : "Lethe";
+  const projectName = videoPath ? videoPath.split(/[/\\]/).pop() : "Noctis";
 
   return (
     <header className="h-9 flex items-center bg-[#1a1a1a] border-b border-zinc-800/50 select-none shrink-0">
       {/* Left: drag + logo */}
       <div className="flex items-center gap-2 px-3 h-full" data-tauri-drag-region>
-        <img src="/logo.png" alt="Lethe" className="w-4 h-4 rounded-sm pointer-events-none" />
+        <img src="/logo.png" alt="Noctis" className="w-4 h-4 rounded-sm pointer-events-none" />
         <span className="text-[11px] font-semibold text-zinc-300 pointer-events-none">{projectName}</span>
         <div className={`w-1.5 h-1.5 rounded-full ${sidecarReady ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`} />
       </div>

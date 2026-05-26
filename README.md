@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/fadhiilahahmadzikri/lethe/main/assets/logo/lethe.png" width="120" alt="Lethe Logo" />
+<img src="https://raw.githubusercontent.com/fadhiilahahmadzikri/Noctis/main/assets/logo/Noctis.png" width="120" alt="Noctis Logo" />
 
-# 🎬 Lethe
+# 🎬 Noctis
 
 **Desktop application for removing filler words and silence from video recordings.**
 
@@ -132,8 +132,8 @@ sudo apt install -y libwebkit2gtk-4.1-dev build-essential curl wget \
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/lethe.git
-cd lethe
+git clone https://github.com/your-username/Noctis.git
+cd Noctis
 ```
 
 ### 2. Install Backend Dependencies
@@ -182,7 +182,7 @@ npm run tauri dev
 
 ```bash
 cd backend
-uv run uvicorn src.lethe.main:app --host 0.0.0.0 --port 18420 --reload
+uv run uvicorn src.Noctis.main:app --host 0.0.0.0 --port 18420 --reload
 ```
 
 The API is now available at `http://localhost:18420`. Visit `http://localhost:18420/docs` for interactive Swagger UI.
@@ -269,7 +269,7 @@ cd backend
 uv add --dev pyinstaller
 
 # Create single-directory bundle
-uv run pyinstaller --name lethe-server \
+uv run pyinstaller --name Noctis-server \
   --onedir \
   --hidden-import uvicorn.logging \
   --hidden-import uvicorn.protocols.http \
@@ -278,7 +278,7 @@ uv run pyinstaller --name lethe-server \
   --hidden-import uvicorn.protocols.websockets.auto \
   --hidden-import uvicorn.lifespan \
   --hidden-import uvicorn.lifespan.on \
-  src/lethe/main.py
+  src/Noctis/main.py
 ```
 
 ### Step 2: Copy Binary to Tauri
@@ -290,10 +290,10 @@ rustc --print host-tuple
 
 # Copy PyInstaller output to Tauri binaries
 # Windows:
-cp -r dist/lethe-server/* src-tauri/binaries/lethe-server-x86_64-pc-windows-msvc/
+cp -r dist/Noctis-server/* src-tauri/binaries/Noctis-server-x86_64-pc-windows-msvc/
 
 # Or for single-file (slower cold start):
-cp dist/lethe-server/lethe-server.exe src-tauri/binaries/lethe-server-x86_64-pc-windows-msvc.exe
+cp dist/Noctis-server/Noctis-server.exe src-tauri/binaries/Noctis-server-x86_64-pc-windows-msvc.exe
 ```
 
 ### Step 3: Build Tauri App
@@ -304,9 +304,9 @@ npm run tauri build
 ```
 
 Output location:
-- **Windows:** `src-tauri/target/release/bundle/nsis/Lethe_0.1.0_x64-setup.exe`
-- **macOS:** `src-tauri/target/release/bundle/dmg/Lethe_0.1.0_aarch64.dmg`
-- **Linux:** `src-tauri/target/release/bundle/appimage/Lethe_0.1.0_amd64.AppImage`
+- **Windows:** `src-tauri/target/release/bundle/nsis/Noctis_0.1.0_x64-setup.exe`
+- **macOS:** `src-tauri/target/release/bundle/dmg/Noctis_0.1.0_aarch64.dmg`
+- **Linux:** `src-tauri/target/release/bundle/appimage/Noctis_0.1.0_amd64.AppImage`
 
 ### Bundle Checklist
 
@@ -321,7 +321,7 @@ Output location:
 ## 🗂 Project Structure
 
 ```
-lethe/
+Noctis/
 ├── .editorconfig                 # Editor formatting rules
 ├── .pre-commit-config.yaml       # Git hooks (ruff, trailing whitespace)
 ├── README.md                     # This file
@@ -331,7 +331,7 @@ lethe/
 │   ├── uv.lock                   # Locked dependencies
 │   ├── .python-version           # Python 3.12
 │   ├── Makefile                  # Dev commands
-│   ├── src/lethe/
+│   ├── src/Noctis/
 │   │   ├── main.py              # FastAPI app factory + uvicorn entry
 │   │   ├── domain/              # Pure business logic (zero external deps)
 │   │   │   ├── entities/        # Segment, VideoProject
@@ -440,8 +440,8 @@ curl -X POST http://localhost:18420/project/abc-123/trim \
 The backend uses `pydantic-settings`. Override via environment variables:
 
 ```bash
-LETHE_PORT=18420          # Server port (default: 18420)
-LETHE_HOST=0.0.0.0       # Server host
+Noctis_PORT=18420          # Server port (default: 18420)
+Noctis_HOST=0.0.0.0       # Server host
 ```
 
 ### Tauri Window
@@ -558,7 +558,7 @@ The default threshold is -30dB. If your video has background noise, try lowering
 {"config": {"threshold": 0.5, "min_silence_duration_ms": 300}}
 ```
 
-Or adjust the FFmpeg silencedetect threshold in `backend/src/lethe/infrastructure/vad/amplitude_vad_detector.py`.
+Or adjust the FFmpeg silencedetect threshold in `backend/src/Noctis/infrastructure/vad/amplitude_vad_detector.py`.
 
 </details>
 
@@ -585,7 +585,7 @@ When no silence is removed (entire video is speech), the output may be marginall
 
 ## 📄 License
 
-MIT © Lethe Contributors
+MIT © Noctis Contributors
 
 ---
 

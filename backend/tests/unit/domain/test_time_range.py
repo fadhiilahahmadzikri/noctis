@@ -2,7 +2,7 @@
 
 import pytest
 
-from lethe.domain.value_objects.time_range import TimeRange
+from noctis.domain.value_objects.time_range import TimeRange
 
 
 def test_duration_ms() -> None:

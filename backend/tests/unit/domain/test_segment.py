@@ -1,6 +1,6 @@
 """Tests for Segment entity."""
 
-from lethe.domain.entities.segment import Segment, SegmentType
+from noctis.domain.entities.segment import Segment, SegmentType
 
 
 def test_toggle_returns_new_segment() -> None:

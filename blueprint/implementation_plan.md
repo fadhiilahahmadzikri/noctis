@@ -1,7 +1,7 @@
-# 🎬 Lethe — Filler & Silence Remover
+# 🎬 Noctis — Filler & Silence Remover
 ## Architecture Blueprint v2 — Implementation Plan
 
-> **App Name:** Lethe  
+> **App Name:** Noctis  
 > **Paradigma:** Clean Architecture + Hexagonal (Ports & Adapters)  
 > **Prinsip:** SOLID · DRY · KISS · Single Source of Truth · Loose Coupling · EDA  
 > **Stack:** Python 3.11+ backend · Tauri v2 + React frontend  
@@ -179,7 +179,7 @@
 ## 6. Directory Structure
 
 ```
-lethe/
+Noctis/
 │
 ├── src-tauri/                        # Tauri Rust shell (minimal config saja)
 │   ├── tauri.conf.json               # Sidecar config, window setup
@@ -415,7 +415,7 @@ putih normal           → akan di-keep
 ```toml
 # backend/pyproject.toml
 [project]
-name = "lethe-backend"
+name = "Noctis-backend"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.110",
@@ -452,4 +452,4 @@ dependencies = [
 
 ---
 
-*Blueprint v2.0 — Lethe · Ready for Phase 1 Implementation*
+*Blueprint v2.0 — Noctis · Ready for Phase 1 Implementation*

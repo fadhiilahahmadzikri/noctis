@@ -22,7 +22,7 @@ test-integration:
 	uv run pytest tests/integration/
 
 run:
-	uv run uvicorn src.lethe.main:app --host 0.0.0.0 --port 18420 --reload
+	uv run uvicorn src.noctris.main:app --host 0.0.0.0 --port 18420 --reload
 
 clean:
 	rm -rf .pytest_cache htmlcov .mypy_cache __pycache__ dist .ruff_cache

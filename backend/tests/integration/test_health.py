@@ -3,7 +3,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from lethe.main import app
+from noctis.main import app
 
 
 @pytest.fixture

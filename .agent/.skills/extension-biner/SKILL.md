@@ -18,7 +18,7 @@ description: >
 ## What This Is
 
 **File Association** is an OS-level feature that maps a file extension to an application.
-When a user double-clicks `myproject.lethe`, the OS launches the registered binary with the
+When a user double-clicks `myproject.Noctis`, the OS launches the registered binary with the
 file path as an argument. This is how every major creative tool works:
 
 | App | Extension | Behavior |
@@ -40,7 +40,7 @@ This is the most important thing to understand. The mechanism differs by platfor
 
 The OS spawns a **new process** with the file path as `argv[1]`:
 ```
-lethe.exe "C:\Users\User\Documents\myproject.lethe"
+Noctis.exe "C:\Users\User\Documents\myproject.Noctis"
 ```
 
 **Problem**: If the app is already running, Windows spawns a second instance.
@@ -63,7 +63,7 @@ It must NOT contain absolute paths to app internals — only user-controlled ass
 ```json
 {
   "version": 1,
-  "app": "lethe",
+  "app": "Noctis",
   "created_at": 1716739200,
   "video_path": "relative/path/or/absolute/user/path.mkv",
   "trim_points": [{ "start_ms": 1000, "end_ms": 5000 }],
@@ -89,10 +89,10 @@ Rules:
   "bundle": {
     "fileAssociations": [
       {
-        "ext": ["lethe"],
-        "name": "Lethe Project",
-        "description": "Lethe video project file",
-        "mimeType": "application/x-lethe-project",
+        "ext": ["Noctis"],
+        "name": "Noctis Project",
+        "description": "Noctis video project file",
+        "mimeType": "application/x-Noctis-project",
         "role": "Editor"
       }
     ],
@@ -114,11 +114,11 @@ Download `FileAssociation.nsh` from the NSIS contrib repository and place it in
 !include "FileAssociation.nsh"
 
 !macro NSIS_HOOK_POSTINSTALL
-  ${registerExtension} "$INSTDIR\your-app.exe" ".lethe" "Lethe_Project"
+  ${registerExtension} "$INSTDIR\your-app.exe" ".Noctis" "Noctis_Project"
 !macroend
 
 !macro NSIS_HOOK_UNINSTALL
-  ${unregisterExtension} ".lethe" "Lethe_Project"
+  ${unregisterExtension} ".Noctis" "Noctis_Project"
 !macroend
 ```
 
@@ -167,7 +167,7 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             // Second instance spawned (Windows): forward file path to first instance
             if let Some(path) = argv.get(1) {
-                if path.ends_with(".lethe") {
+                if path.ends_with(".Noctis") {
                     app.emit("file-opened", path.clone()).ok();
                 }
             }
@@ -179,7 +179,7 @@ pub fn run() {
         .setup(|app| {
             // Cold start on Windows/Linux: file path in argv[1]
             let args: Vec<String> = std::env::args().collect();
-            if let Some(path) = args.get(1).filter(|p| p.ends_with(".lethe")) {
+            if let Some(path) = args.get(1).filter(|p| p.ends_with(".Noctis")) {
                 *app.state::<LaunchFile>().0.lock().unwrap() = Some(path.clone());
             }
             Ok(())
@@ -193,7 +193,7 @@ pub fn run() {
                     .iter()
                     .filter_map(|u| u.to_file_path().ok())
                     .filter_map(|p| p.to_str().map(String::from))
-                    .filter(|p| p.ends_with(".lethe"))
+                    .filter(|p| p.ends_with(".Noctis"))
                     .collect();
                 if let Some(path) = paths.first() {
                     // Try to emit to running frontend; store for cold start fallback
@@ -304,7 +304,7 @@ To iterate quickly: use Windows Sandbox, copy the installer in, install, test, t
 3. **Not unregistering on uninstall**: The NSIS hook must include `NSIS_HOOK_UNINSTALL`.
    Orphaned registry entries cause "Windows cannot open this file" errors after uninstall.
 
-4. **Storing absolute machine-specific paths in the project file**: The `.lethe` file should
+4. **Storing absolute machine-specific paths in the project file**: The `.Noctis` file should
    be portable. Store paths relative to the project file or as user-provided originals.
 
 5. **Skipping single-instance plugin on Windows**: Without it, double-clicking three files

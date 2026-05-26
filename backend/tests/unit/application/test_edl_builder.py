@@ -2,10 +2,10 @@
 
 from uuid import uuid4
 
-from lethe.application.services.edl_builder import EDLBuilderService
-from lethe.application.use_cases.toggle_segment import ToggleSegmentUseCase
-from lethe.domain.entities.segment import Segment, SegmentType
-from lethe.domain.entities.video_project import VideoProject
+from noctis.application.services.edl_builder import EDLBuilderService
+from noctis.application.use_cases.toggle_segment import ToggleSegmentUseCase
+from noctis.domain.entities.segment import Segment, SegmentType
+from noctis.domain.entities.video_project import VideoProject
 
 
 class FakeProjectRepository:

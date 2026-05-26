@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from lethe.main import app
+from noctis.main import app
 
 TESTER_VIDEO = str(Path(__file__).resolve().parents[3] / "assets" / "tester" / "tester.mkv")
 
@@ -48,7 +48,7 @@ async def test_full_pipeline(client: AsyncClient) -> None:
     print(f"  Segments: {len(segments)} total ({speech_count} speech, {silence_count} silence)")
 
     # 4. Trim
-    output_path = str(Path(tempfile.gettempdir()) / "lethe_test_output.mkv")
+    output_path = str(Path(tempfile.gettempdir()) / "Noctis_test_output.mkv")
     resp = await client.post(
         f"/project/{project_id}/trim",
         json={"output_path": output_path},

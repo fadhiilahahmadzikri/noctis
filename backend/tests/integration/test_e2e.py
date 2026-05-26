@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from lethe.main import app
+from noctis.main import app
 
 TESTER_VIDEO = str(Path(__file__).resolve().parents[3] / "assets" / "tester" / "tester.mkv")
 
@@ -31,7 +31,7 @@ async def client() -> AsyncClient:  # type: ignore[misc]
 @pytest.mark.skipif(not os.path.exists(TESTER_VIDEO), reason="tester.mkv not found")
 async def test_e2e_tester_mkv(client: AsyncClient) -> None:
     """Full end-to-end test with real video file."""
-    print("\n=== Lethe E2E Test: tester.mkv ===")
+    print("\n=== Noctis E2E Test: tester.mkv ===")
 
     # --- Step 1: Health check ---
     resp = await client.get("/health")
@@ -92,7 +92,7 @@ async def test_e2e_tester_mkv(client: AsyncClient) -> None:
     print("[5/6] Toggle segment: OK (toggled and restored)")
 
     # --- Step 6: Export trimmed video ---
-    output_path = str(Path(tempfile.gettempdir()) / "lethe_e2e_output.mkv")
+    output_path = str(Path(tempfile.gettempdir()) / "Noctis_e2e_output.mkv")
     # Clean up any previous run
     Path(output_path).unlink(missing_ok=True)
 
