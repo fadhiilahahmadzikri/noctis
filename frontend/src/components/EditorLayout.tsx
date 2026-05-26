@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
-import { Download, RotateCcw, Play, Pause, SkipBack, SkipForward, Eye, EyeOff } from "lucide-react";
+import { Download, RotateCcw, Play, Pause, SkipBack, SkipForward, Eye, EyeOff, Settings, MessageSquareText } from "lucide-react";
 import { useProjectStore } from "../stores/projectStore";
 import { useHistoryStore } from "../stores/historyStore";
 import { apiClient } from "../services/apiClient";
@@ -8,6 +8,7 @@ import { Timeline } from "./Timeline";
 import { ConfigPanel, type DetectionSettings } from "./ConfigPanel";
 import { ExportDialog } from "./ExportDialog";
 import { MediaLibrary } from "./MediaLibrary";
+import { CaptionPanel } from "./CaptionPanel";
 
 export function EditorLayout() {
   const { projectId, videoPath, duration, segments, setSegments, updateSegment } = useProjectStore();
@@ -19,6 +20,7 @@ export function EditorLayout() {
   const [currentTime, setCurrentTime] = useState(0);
   const [showExport, setShowExport] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rightTab, setRightTab] = useState<"config" | "caption">("config");
   const [settings, setSettings] = useState<DetectionSettings>({ threshold: 0.5, minSilenceDurationMs: 500, speechPadMs: 100 });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipLock = useRef(false);
@@ -138,18 +140,35 @@ export function EditorLayout() {
 
             {/* Right: Config */}
             <Panel defaultSize={25} minSize={15}>
-              <div className="h-full bg-[#141414] flex flex-col overflow-y-auto scrollbar-none">
-                <ConfigPanel settings={settings} onChange={handleConfigChange} disabled={detecting} duration={duration} outputDuration={keptDuration} />
-                <div className="px-3 pb-2 text-[10px] text-zinc-600">
-                  {segments.length} segments
+              <div className="h-full bg-[#141414] flex flex-col overflow-hidden">
+                {/* Tab switcher */}
+                <div className="flex border-b border-zinc-800/50 shrink-0">
+                  <button onClick={() => setRightTab("config")} className={`flex-1 flex items-center justify-center gap-1 py-2 text-[10px] transition-colors ${rightTab === "config" ? "text-zinc-200 border-b border-accent" : "text-zinc-600 hover:text-zinc-400"}`}>
+                    <Settings size={10} /> Detect
+                  </button>
+                  <button onClick={() => setRightTab("caption")} className={`flex-1 flex items-center justify-center gap-1 py-2 text-[10px] transition-colors ${rightTab === "caption" ? "text-zinc-200 border-b border-accent" : "text-zinc-600 hover:text-zinc-400"}`}>
+                    <MessageSquareText size={10} /> Caption
+                  </button>
                 </div>
-                <div className="p-2.5 mt-auto space-y-1.5 border-t border-zinc-800/50">
-                  <button onClick={() => runDetection(settings)} disabled={detecting} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] rounded bg-zinc-800 text-zinc-400 hover:bg-zinc-700 disabled:opacity-40 transition-colors">
-                    <RotateCcw size={10} />{detecting ? "..." : "Re-detect"}
-                  </button>
-                  <button onClick={() => setShowExport(true)} className="w-full flex items-center justify-center gap-1 px-2 py-2 text-[11px] rounded-md bg-accent text-white hover:bg-accent/80 transition-colors font-medium">
-                    <Download size={12} /> Export
-                  </button>
+
+                {/* Tab content */}
+                <div className="flex-1 overflow-y-auto scrollbar-none">
+                  {rightTab === "config" ? (
+                    <div className="flex flex-col h-full">
+                      <ConfigPanel settings={settings} onChange={handleConfigChange} disabled={detecting} duration={duration} outputDuration={keptDuration} />
+                      <div className="px-3 pb-2 text-[10px] text-zinc-600">{segments.length} segments</div>
+                      <div className="p-2.5 mt-auto space-y-1.5 border-t border-zinc-800/50">
+                        <button onClick={() => runDetection(settings)} disabled={detecting} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] rounded bg-zinc-800 text-zinc-400 hover:bg-zinc-700 disabled:opacity-40 transition-colors">
+                          <RotateCcw size={10} />{detecting ? "..." : "Re-detect"}
+                        </button>
+                        <button onClick={() => setShowExport(true)} className="w-full flex items-center justify-center gap-1 px-2 py-2 text-[11px] rounded-md bg-accent text-white hover:bg-accent/80 transition-colors font-medium">
+                          <Download size={12} /> Export
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <CaptionPanel projectId={projectId} currentTime={currentTime} onSeek={seek} />
+                  )}
                 </div>
               </div>
             </Panel>
