@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/fadhiilahahmadzikri/Noctis/main/assets/logo/Noctis.png" width="120" alt="Noctis Logo" />
+<img src="https://raw.githubusercontent.com/fadhiilahahmadzikri/noctis/main/assets/logo/noctis.png" width="120" alt="Noctis Logo" />
 
 # 🎬 Noctis
 
