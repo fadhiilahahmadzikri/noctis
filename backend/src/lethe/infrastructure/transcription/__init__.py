@@ -66,39 +66,30 @@ class GroqTranscriber:
         """Parse Groq verbose_json response into word-level chunks."""
         chunks: list[TranscriptChunk] = []
 
-        # Word-level timestamps
+        # Word-level timestamps (list of dicts: {word, start, end})
         words = getattr(response, "words", None)
         if words:
             for w in words:
-                text = getattr(w, "word", "").strip()
-                start = getattr(w, "start", 0.0)
-                end = getattr(w, "end", 0.0)
+                text = (w.get("word", "") if isinstance(w, dict) else getattr(w, "word", "")).strip()
+                start = w.get("start", 0.0) if isinstance(w, dict) else getattr(w, "start", 0.0)
+                end = w.get("end", 0.0) if isinstance(w, dict) else getattr(w, "end", 0.0)
                 if text:
-                    chunks.append(TranscriptChunk(
-                        text=text,
-                        start_ms=int(start * 1000),
-                        end_ms=int(end * 1000),
-                    ))
+                    chunks.append(TranscriptChunk(text=text, start_ms=int(start * 1000), end_ms=int(end * 1000)))
             return chunks
 
         # Fallback: segment-level
         segments = getattr(response, "segments", None)
         if segments:
             for seg in segments:
-                text = getattr(seg, "text", "").strip()
-                start = getattr(seg, "start", 0.0)
-                end = getattr(seg, "end", 0.0)
+                text = (seg.get("text", "") if isinstance(seg, dict) else getattr(seg, "text", "")).strip()
+                start = seg.get("start", 0.0) if isinstance(seg, dict) else getattr(seg, "start", 0.0)
+                end = seg.get("end", 0.0) if isinstance(seg, dict) else getattr(seg, "end", 0.0)
                 if text:
-                    chunks.append(TranscriptChunk(
-                        text=text,
-                        start_ms=int(start * 1000),
-                        end_ms=int(end * 1000),
-                    ))
+                    chunks.append(TranscriptChunk(text=text, start_ms=int(start * 1000), end_ms=int(end * 1000)))
             return chunks
 
-        # Last fallback: full text
+        # Last fallback
         text = getattr(response, "text", "")
         if text:
             chunks.append(TranscriptChunk(text=text.strip(), start_ms=0, end_ms=0))
-
         return chunks
