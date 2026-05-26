@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { Play, Pause, SkipBack, SkipForward, Eye, EyeOff } from "lucide-react";
+import { CaptionOverlay } from "./CaptionOverlay";
 import type { SegmentDto } from "../types/dtos";
 
 interface VideoPlayerProps {
@@ -87,6 +88,7 @@ export function VideoPlayer({ src, currentTime, segments, onTimeUpdate, onDurati
         className="w-full aspect-video bg-black"
         preload="metadata"
       />
+      <CaptionOverlay isPlaying={playing} currentTime={currentTime} />
       <div className="flex items-center justify-between px-3 py-2 bg-[#0a0a0a]">
         <button
           onClick={() => setPreviewMode(!previewMode)}
