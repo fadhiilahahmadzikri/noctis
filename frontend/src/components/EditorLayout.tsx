@@ -135,14 +135,26 @@ export function EditorLayout() {
               <div className="flex flex-col h-full bg-[#0d0d0d]">
                 <div className="flex-1 flex items-center justify-center p-2 min-h-0 relative">
                   <video ref={videoRef} src={`http://localhost:18420/file?path=${encodeURIComponent(videoPath)}`} className="max-h-full max-w-full rounded shadow-2xl" preload="metadata" />
-                  {/* Caption overlay */}
+                  {/* Caption overlay — word-level karaoke */}
                   {captions.length > 0 && (() => {
-                    const active = captions.find((c) => currentTime >= c.start_ms && currentTime <= c.end_ms);
-                    return active ? (
-                      <div className="absolute bottom-14 left-1/2 -translate-x-1/2 px-3 py-1 rounded bg-black/80 text-white text-sm max-w-lg text-center">
-                        {active.text}
+                    // Find all words visible in current ~3s window
+                    const windowStart = Math.max(0, currentTime - 500);
+                    const windowEnd = currentTime + 2500;
+                    const visible = captions.filter((c) => c.end_ms >= windowStart && c.start_ms <= windowEnd);
+                    if (visible.length === 0) return null;
+                    return (
+                      <div className="absolute bottom-14 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-black/80 max-w-lg text-center leading-relaxed">
+                        {visible.map((w, i) => {
+                          const isActive = currentTime >= w.start_ms && currentTime <= w.end_ms;
+                          const isPast = currentTime > w.end_ms;
+                          return (
+                            <span key={i} className={`text-sm ${isActive ? "text-accent font-semibold" : isPast ? "text-white/90" : "text-white/40"}`}>
+                              {w.text}{" "}
+                            </span>
+                          );
+                        })}
                       </div>
-                    ) : null;
+                    );
                   })()}
                 </div>
                 <div className="flex items-center justify-center gap-3 py-1.5 border-t border-zinc-800/30">

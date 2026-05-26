@@ -1,53 +1,59 @@
-"""HuggingFace transcription adapter using official InferenceClient."""
+"""Groq transcription adapter — word-level timestamps via Whisper large-v3-turbo."""
 
 import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from huggingface_hub import InferenceClient
+from groq import Groq
 from loguru import logger
 
 
 @dataclass(frozen=True)
 class TranscriptChunk:
-    """A single transcribed segment with timestamps."""
+    """A transcribed word/phrase with precise timestamps."""
 
     text: str
     start_ms: int
     end_ms: int
 
 
-class HuggingFaceTranscriber:
-    """Transcribes audio using HuggingFace InferenceClient (whisper-large-v3-turbo).
+class GroqTranscriber:
+    """Transcribes audio using Groq API with word-level timestamps.
 
-    Uses official huggingface_hub SDK — handles routing, retries, and provider selection.
-    No local GPU needed.
+    Groq runs Whisper on their hardware (free tier: 2000 req/day).
+    Returns word-level timestamps for precise caption sync.
     """
 
-    MODEL = "openai/whisper-large-v3-turbo"
+    MODEL = "whisper-large-v3-turbo"
 
-    def __init__(self, api_token: str) -> None:
-        self._client = InferenceClient(provider="hf-inference", api_key=api_token)
+    def __init__(self, api_key: str) -> None:
+        self._client = Groq(api_key=api_key)
 
     def transcribe(self, video_path: str) -> list[TranscriptChunk]:
-        """Extract audio from video and transcribe."""
+        """Extract audio and transcribe with word timestamps."""
         logger.info(f"Transcribing: {video_path}")
         audio_path = self._extract_audio(video_path)
 
         try:
-            result = self._client.automatic_speech_recognition(
-                audio_path, model=self.MODEL
-            )
-            chunks = self._parse_result(result)
-            logger.info(f"Transcription complete: {len(chunks)} chunks")
+            with open(audio_path, "rb") as audio_file:
+                response = self._client.audio.transcriptions.create(
+                    file=(Path(audio_path).name, audio_file),
+                    model=self.MODEL,
+                    response_format="verbose_json",
+                    timestamp_granularities=["word", "segment"],
+                    language="id",
+                )
+
+            chunks = self._parse_response(response)
+            logger.info(f"Transcription complete: {len(chunks)} words")
             return chunks
         finally:
             Path(audio_path).unlink(missing_ok=True)
 
     def _extract_audio(self, video_path: str) -> str:
         """Extract audio as mono 16kHz FLAC."""
-        output = str(Path(tempfile.gettempdir()) / f"lethe_transcribe_{Path(video_path).stem}.flac")
+        output = str(Path(tempfile.gettempdir()) / f"lethe_{Path(video_path).stem}.flac")
         cmd = [
             "ffmpeg", "-y", "-i", video_path,
             "-vn", "-ac", "1", "-ar", "16000", "-c:a", "flac",
@@ -56,21 +62,43 @@ class HuggingFaceTranscriber:
         subprocess.run(cmd, capture_output=True, check=True)
         return output
 
-    def _parse_result(self, result: object) -> list[TranscriptChunk]:
-        """Parse InferenceClient ASR result into chunks."""
+    def _parse_response(self, response: object) -> list[TranscriptChunk]:
+        """Parse Groq verbose_json response into word-level chunks."""
         chunks: list[TranscriptChunk] = []
 
-        # Result is an AutomaticSpeechRecognitionOutput with .text and .chunks
-        if hasattr(result, "chunks") and result.chunks:  # type: ignore[union-attr]
-            for chunk in result.chunks:  # type: ignore[union-attr]
-                ts = chunk.get("timestamp", (0, 0)) if isinstance(chunk, dict) else getattr(chunk, "timestamp", (0, 0))
-                text = chunk.get("text", "").strip() if isinstance(chunk, dict) else getattr(chunk, "text", "").strip()
-                if not text:
-                    continue
-                start = ts[0] if ts[0] is not None else 0
-                end = ts[1] if ts[1] is not None else start + 1
-                chunks.append(TranscriptChunk(text=text, start_ms=int(start * 1000), end_ms=int(end * 1000)))
-        elif hasattr(result, "text") and result.text:  # type: ignore[union-attr]
-            chunks.append(TranscriptChunk(text=result.text.strip(), start_ms=0, end_ms=0))  # type: ignore[union-attr]
+        # Word-level timestamps
+        words = getattr(response, "words", None)
+        if words:
+            for w in words:
+                text = getattr(w, "word", "").strip()
+                start = getattr(w, "start", 0.0)
+                end = getattr(w, "end", 0.0)
+                if text:
+                    chunks.append(TranscriptChunk(
+                        text=text,
+                        start_ms=int(start * 1000),
+                        end_ms=int(end * 1000),
+                    ))
+            return chunks
+
+        # Fallback: segment-level
+        segments = getattr(response, "segments", None)
+        if segments:
+            for seg in segments:
+                text = getattr(seg, "text", "").strip()
+                start = getattr(seg, "start", 0.0)
+                end = getattr(seg, "end", 0.0)
+                if text:
+                    chunks.append(TranscriptChunk(
+                        text=text,
+                        start_ms=int(start * 1000),
+                        end_ms=int(end * 1000),
+                    ))
+            return chunks
+
+        # Last fallback: full text
+        text = getattr(response, "text", "")
+        if text:
+            chunks.append(TranscriptChunk(text=text.strip(), start_ms=0, end_ms=0))
 
         return chunks
