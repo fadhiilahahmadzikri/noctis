@@ -41,6 +41,15 @@
     "category": "Video",
     "shortDescription": "Remove silence and filler from video recordings",
     "longDescription": "Lethe is a desktop video editor that automatically detects and removes silence from recordings. Features include timeline editing, auto-captions via Whisper, and non-destructive workflow.",
+    "fileAssociations": [
+      {
+        "ext": ["lethe"],
+        "name": "Lethe Project",
+        "description": "Lethe video project file",
+        "mimeType": "application/x-lethe-project",
+        "role": "Editor"
+      }
+    ],
     "windows": {
       "nsis": {
         "installMode": "currentUser",

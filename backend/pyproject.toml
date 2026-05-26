@@ -19,6 +19,7 @@ dependencies = [
     "groq>=1.2.0",
     "supabase>=2.30.0",
     "python-multipart>=0.0.29",
+    "platformdirs>=4.9.6",
 ]
 
 [project.optional-dependencies]
