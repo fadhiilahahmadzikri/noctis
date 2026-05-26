@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Lethe",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "identifier": "com.lethe.app",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "Lethe",
-        "width": 1200,
+        "width": 1280,
         "height": 800,
-        "minWidth": 900,
-        "minHeight": 600,
+        "minWidth": 960,
+        "minHeight": 640,
         "center": true,
         "decorations": false,
         "visible": true
@@ -28,7 +28,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis", "msi"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -36,6 +36,20 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [],
+    "copyright": "© 2026 Lethe",
+    "category": "Video",
+    "shortDescription": "Remove silence and filler from video recordings",
+    "longDescription": "Lethe is a desktop video editor that automatically detects and removes silence from recordings. Features include timeline editing, auto-captions via Whisper, and non-destructive workflow.",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "displayLanguageSelector": false,
+        "languages": ["English"],
+        "headerImage": null,
+        "sidebarImage": null
+      }
+    },
     "externalBin": []
   }
 }
