@@ -1,3 +1,12 @@
+---
+title: Lethe
+emoji: 🎬
+colorFrom: purple
+colorTo: gray
+sdk: docker
+pinned: false
+---
+
 <div align="center">
 
 # 🎬 Lethe
