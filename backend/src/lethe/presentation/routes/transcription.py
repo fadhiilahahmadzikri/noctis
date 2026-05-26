@@ -1,13 +1,16 @@
-"""Transcription endpoint — cached via Supabase, powered by Groq Whisper."""
+"""Transcription endpoint — Groq Whisper, cached in local SQLite."""
 
-import os
-from uuid import UUID
+import hashlib
+import json
+import sqlite3
 from pathlib import Path
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from lethe.infrastructure.di.container import container
+from lethe.main import DB_PATH
 
 router = APIRouter(prefix="/project", tags=["transcription"])
 
@@ -24,25 +27,48 @@ class TranscribeResponse(BaseModel):
     cached: bool = False
 
 
-def _get_env(key: str) -> str:
-    """Read from env or .env file."""
-    val = os.environ.get(key, "")
-    if val:
-        return val
-    env_file = Path(__file__).resolve().parents[4] / ".env"
-    if env_file.exists():
-        for line in env_file.read_text().splitlines():
-            if line.startswith(f"{key}="):
-                return line.split("=", 1)[1].strip()
-    return ""
+def _get_setting(key: str) -> str:
+    """Read a setting from SQLite."""
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)")
+    row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    conn.close()
+    return row[0] if row else ""
+
+
+def _hash_file(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while chunk := f.read(8192):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _get_cached(file_hash: str) -> list[dict] | None:  # type: ignore[type-arg]
+    conn = sqlite3.connect(str(DB_PATH))
+    row = conn.execute("SELECT chunks FROM transcription_cache WHERE file_hash = ?", (file_hash,)).fetchone()
+    conn.close()
+    if row:
+        return json.loads(row[0])
+    return None
+
+
+def _set_cached(file_hash: str, chunks: list[dict]) -> None:  # type: ignore[type-arg]
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute(
+        "INSERT OR REPLACE INTO transcription_cache (file_hash, chunks, full_text) VALUES (?, ?, ?)",
+        (file_hash, json.dumps(chunks), " ".join(c["text"] for c in chunks)),
+    )
+    conn.commit()
+    conn.close()
 
 
 @router.post("/{project_id}/transcribe", response_model=TranscribeResponse)
 async def transcribe_project(project_id: str) -> TranscribeResponse:
-    """Transcribe video. Returns cached result if same file was transcribed before."""
-    groq_key = _get_env("GROQ_API_KEY")
-    if not groq_key:
-        raise HTTPException(status_code=400, detail="GROQ_API_KEY not set in .env")
+    """Transcribe video. Cached locally in SQLite by file hash."""
+    api_key = _get_setting("groq_api_key")
+    if not api_key:
+        raise HTTPException(status_code=400, detail="API key not set. Go to Settings to add your Groq API key.")
 
     try:
         pid = UUID(project_id)
@@ -56,37 +82,27 @@ async def transcribe_project(project_id: str) -> TranscribeResponse:
     if not Path(project.source_path).exists():
         raise HTTPException(status_code=404, detail="Video file not found")
 
-    # Try cache first (Supabase)
-    supabase_url = _get_env("SUPABASE_URL")
-    supabase_key = _get_env("SUPABASE_KEY")
-    cache = None
+    # Check local cache
+    file_hash = _hash_file(project.source_path)
+    cached = _get_cached(file_hash)
+    if cached is not None:
+        return TranscribeResponse(
+            chunks=[TranscriptChunkResponse(**c) for c in cached],
+            full_text=" ".join(c["text"] for c in cached),
+            cached=True,
+        )
 
-    if supabase_url and supabase_key:
-        from lethe.infrastructure.cache import TranscriptionCache
-        cache = TranscriptionCache(supabase_url, supabase_key)
-        cached_chunks = cache.get(project.source_path)
-        if cached_chunks is not None:
-            return TranscribeResponse(
-                chunks=[TranscriptChunkResponse(text=c.text, start_ms=c.start_ms, end_ms=c.end_ms) for c in cached_chunks],
-                full_text=" ".join(c.text for c in cached_chunks),
-                cached=True,
-            )
-
-    # Cache miss — call Groq
+    # Call Groq
     from lethe.infrastructure.transcription import GroqTranscriber
-
-    transcriber = GroqTranscriber(api_key=groq_key)
+    transcriber = GroqTranscriber(api_key=api_key)
     try:
         chunks = transcriber.transcribe(project.source_path)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
-    # Store in cache
-    if cache and chunks:
-        try:
-            cache.put(project.source_path, chunks, project.duration_ms)
-        except Exception:
-            pass  # Non-fatal
+    # Cache locally
+    chunk_dicts = [{"text": c.text, "start_ms": c.start_ms, "end_ms": c.end_ms} for c in chunks]
+    _set_cached(file_hash, chunk_dicts)
 
     return TranscribeResponse(
         chunks=[TranscriptChunkResponse(text=c.text, start_ms=c.start_ms, end_ms=c.end_ms) for c in chunks],
