@@ -29,25 +29,38 @@ export function MediaLibrary() {
     setLoading(true);
     setError(null);
 
-    for (const path of paths) {
+    for (const filePath of paths) {
       try {
-        const project = await apiClient.loadProject(path);
-        const name = path.split(/[/\\]/).pop() || "video";
+        const fileName = filePath.split(/[/\\]/).pop() || "video.mp4";
+
+        // Read file bytes and upload to server
+        const fileBytes = await fetch(`http://localhost:18420/file?path=${encodeURIComponent(filePath)}`).then(r => r.blob()).catch(() => null);
+
+        let serverPath = filePath;
+        if (fileBytes) {
+          // Upload to server
+          const file = new File([fileBytes], fileName);
+          const uploaded = await apiClient.uploadVideo(file);
+          serverPath = uploaded.path;
+        } else {
+          // Fallback: try direct path (local backend)
+        }
+
+        const project = await apiClient.loadProject(serverPath);
         const asset: MediaAsset = {
           id: project.project_id,
           path: project.video_path,
-          name,
+          name: fileName,
           durationMs: project.duration_ms,
-          active: !projectId, // first one becomes active
+          active: !projectId,
         };
         setAssets((prev) => [...prev, asset]);
 
-        // Set as active project if first import
         if (!projectId) {
           setProject(project.project_id, project.video_path, project.duration_ms);
         }
       } catch (e) {
-        setError(e instanceof ApiError ? e.message : `Failed: ${path}`);
+        setError(e instanceof ApiError ? e.message : `Failed: ${filePath}`);
       }
     }
     setLoading(false);

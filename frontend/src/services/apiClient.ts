@@ -20,6 +20,14 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const apiClient = {
   health: () => request<{ status: string }>("/health"),
 
+  uploadVideo: async (file: File): Promise<{ path: string; filename: string }> => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${BASE_URL}/upload`, { method: "POST", body: form });
+    if (!res.ok) throw new ApiError(res.status, await res.text());
+    return res.json();
+  },
+
   loadProject: (videoPath: string) =>
     request<ProjectDto>("/project/load", {
       method: "POST",
