@@ -7,6 +7,7 @@ import { apiClient } from "../services/apiClient";
 import { Timeline } from "./Timeline";
 import { ConfigPanel, type DetectionSettings } from "./ConfigPanel";
 import { ExportDialog } from "./ExportDialog";
+import { MediaLibrary } from "./MediaLibrary";
 
 export function EditorLayout() {
   const { projectId, videoPath, duration, segments, setSegments, updateSegment } = useProjectStore();
@@ -94,7 +95,17 @@ export function EditorLayout() {
     return () => window.removeEventListener("keydown", handler);
   }, [togglePlay]);
 
-  if (!projectId || !videoPath) return null;
+  if (!projectId || !videoPath) {
+    // Show empty editor with media library
+    return (
+      <div className="h-full flex">
+        <div className="w-48 shrink-0"><MediaLibrary /></div>
+        <div className="flex-1 flex items-center justify-center bg-[#0d0d0d]">
+          <p className="text-zinc-600 text-xs">Import media to start editing</p>
+        </div>
+      </div>
+    );
+  }
 
   const keptDuration = segments.filter((s) => !s.is_removed).reduce((a, s) => a + (s.end_ms - s.start_ms), 0);
 
@@ -104,6 +115,11 @@ export function EditorLayout() {
         {/* Top: Video preview + right config */}
         <Panel defaultSize={62} minSize={35}>
           <div className="flex h-full">
+            {/* Left: Media library */}
+            <div className="w-48 shrink-0">
+              <MediaLibrary />
+            </div>
+
             {/* Video area */}
             <div className="flex-1 flex flex-col bg-[#0d0d0d] min-w-0">
               {/* Video */}
