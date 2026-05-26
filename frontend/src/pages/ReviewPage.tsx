@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Download, RotateCcw } from "lucide-react";
+import { Download, RotateCcw, Undo2, Redo2 } from "lucide-react";
 import { useProjectStore } from "../stores/projectStore";
+import { useHistoryStore } from "../stores/historyStore";
 import { apiClient } from "../services/apiClient";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { Timeline } from "../components/Timeline";
@@ -9,6 +10,7 @@ import type { SegmentDto } from "../types/dtos";
 
 export function ReviewPage() {
   const { projectId, videoPath, duration, segments, setSegments, updateSegment } = useProjectStore();
+  const { pushState, undo, redo, canUndo, canRedo } = useHistoryStore();
   const [detecting, setDetecting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportDone, setExportDone] = useState(false);
@@ -62,19 +64,38 @@ export function ReviewPage() {
     try {
       const updated = await apiClient.toggleSegment(projectId, segmentId, !seg.is_removed);
       if (updated && updated.id) {
+        pushState(segments);
         updateSegment(updated);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Toggle failed");
     }
-  }, [projectId, segments, updateSegment]);
+  }, [projectId, segments, updateSegment, pushState]);
 
   const handleTrimSegment = useCallback((segmentId: string, newStartMs: number, newEndMs: number) => {
-    // Non-destructive: update local state only (metadata edit)
     const seg = segments.find((s) => s.id === segmentId);
     if (!seg) return;
+    pushState(segments);
     updateSegment({ ...seg, start_ms: Math.round(newStartMs), end_ms: Math.round(newEndMs) });
-  }, [segments, updateSegment]);
+  }, [segments, updateSegment, pushState]);
+
+  // Keyboard shortcuts: Ctrl+Z undo, Ctrl+Y redo
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        const prev = undo();
+        if (prev) setSegments(prev);
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+        e.preventDefault();
+        const next = redo();
+        if (next) setSegments(next);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [undo, redo, setSegments]);
 
   const handleExport = useCallback(async () => {
     if (!projectId || !videoPath) return;
@@ -146,6 +167,24 @@ export function ReviewPage() {
           </div>
 
           <div className="p-3 space-y-2 mt-auto">
+            <div className="flex gap-1">
+              <button
+                onClick={() => { const prev = undo(); if (prev) setSegments(prev); }}
+                disabled={!canUndo()}
+                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded-md bg-zinc-800 text-zinc-400 hover:bg-zinc-700 disabled:opacity-30 transition-colors"
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo2 size={11} /> Undo
+              </button>
+              <button
+                onClick={() => { const next = redo(); if (next) setSegments(next); }}
+                disabled={!canRedo()}
+                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded-md bg-zinc-800 text-zinc-400 hover:bg-zinc-700 disabled:opacity-30 transition-colors"
+                title="Redo (Ctrl+Y)"
+              >
+                <Redo2 size={11} /> Redo
+              </button>
+            </div>
             <button
               onClick={() => runDetection(settings)}
               disabled={detecting}

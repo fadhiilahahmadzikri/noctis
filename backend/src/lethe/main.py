@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from lethe.presentation.routes import detect, health, project, segment, trim, waveform
+from lethe.presentation.routes import detect, health, project, segment, thumbnails, trim, waveform
 from lethe.presentation.ws import progress
 
 
@@ -27,6 +27,7 @@ def create_app() -> FastAPI:
     app.include_router(segment.router)
     app.include_router(trim.router)
     app.include_router(waveform.router)
+    app.include_router(thumbnails.router)
     app.include_router(progress.router)
 
     @app.get("/file")
