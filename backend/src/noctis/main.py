@@ -32,13 +32,18 @@ def _parse_args() -> argparse.Namespace:
 ARGS = _parse_args()
 DATA_DIR = Path(ARGS.data_dir)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
-DB_PATH = DATA_DIR / "Noctis.db"
+
+from noctis.shared.db import DB_PATH  # noqa: E402
 
 
 def _init_db() -> None:
     """Initialize SQLite database with schema."""
     conn = sqlite3.connect(str(DB_PATH))
     conn.executescript("""
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS projects (
             id TEXT PRIMARY KEY,
             video_path TEXT NOT NULL,
