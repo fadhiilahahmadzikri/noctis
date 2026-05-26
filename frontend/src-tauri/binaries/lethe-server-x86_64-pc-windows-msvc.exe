@@ -1,0 +1,3 @@
+@echo off
+cd /d D:\noctis\backend
+uv run uvicorn src.lethe.main:app --host 0.0.0.0 --port 18420

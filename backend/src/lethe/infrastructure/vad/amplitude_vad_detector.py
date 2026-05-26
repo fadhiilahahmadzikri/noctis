@@ -44,12 +44,12 @@ class AmplitudeVADDetector:
 
     def _parse_silence(self, stderr: str) -> list[TimeRange]:
         """Parse ffmpeg silencedetect output into silence TimeRanges."""
-        starts = re.findall(r"silence_start: ([\d.]+)", stderr)
+        starts = re.findall(r"silence_start: (-?[\d.]+)", stderr)
         ends = re.findall(r"silence_end: ([\d.]+)", stderr)
 
         ranges: list[TimeRange] = []
         for s, e in zip(starts, ends):
-            start_ms = int(float(s) * 1000)
+            start_ms = max(0, int(float(s) * 1000))
             end_ms = int(float(e) * 1000)
             if end_ms > start_ms:
                 ranges.append(TimeRange(start_ms=start_ms, end_ms=end_ms))
