@@ -1,4 +1,4 @@
-"""Integration test for health endpoint."""
+"""Integration test for API endpoints."""
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -19,6 +19,6 @@ async def test_health_returns_ok(client: AsyncClient) -> None:
     assert response.json() == {"status": "ok"}
 
 
-async def test_project_load_returns_501(client: AsyncClient) -> None:
-    response = await client.post("/project/load", json={"video_path": "/test.mp4"})
-    assert response.status_code == 501
+async def test_project_load_file_not_found(client: AsyncClient) -> None:
+    response = await client.post("/project/load", json={"video_path": "/nonexistent.mp4"})
+    assert response.status_code == 404

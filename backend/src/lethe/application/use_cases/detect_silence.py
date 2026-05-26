@@ -4,23 +4,26 @@ from uuid import UUID
 
 from lethe.application.ports.project_repository import ProjectRepository
 from lethe.domain.entities.segment import Segment, SegmentType
+from lethe.domain.ports.audio_extractor import AudioExtractor
 from lethe.domain.ports.progress_emitter import ProgressEmitter
 from lethe.domain.ports.vad_detector import VADDetector
 from lethe.domain.value_objects.processing_config import ProcessingConfig
 
 
 class DetectSilenceUseCase:
-    """Orchestrates VAD detection and segment creation."""
+    """Orchestrates audio extraction + VAD detection + segment creation."""
 
     def __init__(
         self,
         vad: VADDetector,
         repo: ProjectRepository,
         emitter: ProgressEmitter,
+        audio_extractor: AudioExtractor | None = None,
     ) -> None:
         self._vad = vad
         self._repo = repo
         self._emitter = emitter
+        self._audio_extractor = audio_extractor
 
     def execute(self, project_id: UUID, config: ProcessingConfig) -> int:
         """Run detection. Returns segment count."""
@@ -28,7 +31,9 @@ class DetectSilenceUseCase:
         if project is None:
             raise ValueError(f"Project {project_id} not found")
 
-        self._emitter.emit(0.0, "Extracting speech segments...")
+        self._emitter.emit(0.0, "Detecting silence...")
+
+        # VAD can work directly on video file (ffmpeg silencedetect handles it)
         speech_ranges = self._vad.detect(project.source_path)
 
         segments: list[Segment] = []
