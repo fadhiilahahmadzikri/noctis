@@ -44,7 +44,7 @@ export function Timeline({ segments, duration, currentTime, onSeek, onToggleSegm
       <div
         ref={trackRef}
         onClick={handleClick}
-        className="relative h-12 bg-zinc-900 rounded-lg cursor-crosshair overflow-hidden border border-zinc-800"
+        className="relative h-16 bg-zinc-900 rounded-lg cursor-crosshair overflow-hidden border border-zinc-800"
       >
         {/* Segment blocks */}
         {segments.map((seg) => {

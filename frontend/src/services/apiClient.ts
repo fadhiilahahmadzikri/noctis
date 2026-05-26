@@ -36,7 +36,7 @@ export const apiClient = {
     request<{ segments: SegmentDto[] }>(`/project/${projectId}/segments`),
 
   toggleSegment: (projectId: string, segmentId: string, isRemoved: boolean) =>
-    request<{ segment: SegmentDto }>(`/project/${projectId}/segment/${segmentId}`, {
+    request<SegmentDto>(`/project/${projectId}/segment/${segmentId}`, {
       method: "PATCH",
       body: JSON.stringify({ is_removed: isRemoved }),
     }),

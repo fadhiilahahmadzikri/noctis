@@ -41,14 +41,12 @@ export function ReviewPage() {
     }
   }, [projectId, setSegments]);
 
-  // Auto-detect on mount
   useEffect(() => {
     if (projectId && segments.length === 0) {
       runDetection(settings);
     }
   }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-detect on config change (debounced)
   const handleConfigChange = useCallback((newSettings: DetectionSettings) => {
     setSettings(newSettings);
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -59,11 +57,13 @@ export function ReviewPage() {
 
   const handleToggle = useCallback(async (segmentId: string) => {
     if (!projectId) return;
-    const seg = segments.find((s) => s.id === segmentId);
+    const seg = segments.find((s: SegmentDto) => s.id === segmentId);
     if (!seg) return;
     try {
-      const data = await apiClient.toggleSegment(projectId, segmentId, !seg.is_removed);
-      updateSegment(data.segment);
+      const updated = await apiClient.toggleSegment(projectId, segmentId, !seg.is_removed);
+      if (updated && updated.id) {
+        updateSegment(updated);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Toggle failed");
     }
@@ -85,10 +85,6 @@ export function ReviewPage() {
     }
   }, [projectId, videoPath]);
 
-  const handleSeek = useCallback((timeMs: number) => {
-    setCurrentTime(timeMs);
-  }, []);
-
   if (!projectId || !videoPath) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -102,124 +98,82 @@ export function ReviewPage() {
   const keptDuration = segments.filter((s) => !s.is_removed).reduce((sum, s) => sum + (s.end_ms - s.start_ms), 0);
 
   return (
-    <div className="flex h-full">
-      {/* Main workspace */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Video player */}
-        <div className="p-3 pb-0">
-          <VideoPlayer
-            src={`http://localhost:18420/file?path=${encodeURIComponent(videoPath)}`}
-            currentTime={currentTime}
-            onTimeUpdate={setCurrentTime}
-            onDurationChange={() => {}}
-          />
-        </div>
-
-        {/* Timeline */}
-        <div className="p-3">
-          {detecting ? (
-            <div className="h-12 flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800">
-              <span className="text-xs text-zinc-500 animate-pulse">Analyzing audio...</span>
-            </div>
-          ) : (
-            <Timeline
-              segments={segments}
-              duration={duration}
+    <div className="flex flex-col h-full">
+      {/* Top: Video preview (dominant) + Right panel */}
+      <div className="flex flex-1 min-h-0">
+        {/* Center: Video preview */}
+        <div className="flex-1 flex flex-col items-center justify-center p-4 min-w-0 bg-[#111111]">
+          <div className="w-full max-w-3xl">
+            <VideoPlayer
+              src={`http://localhost:18420/file?path=${encodeURIComponent(videoPath)}`}
               currentTime={currentTime}
-              onSeek={handleSeek}
-              onToggleSegment={handleToggle}
+              onTimeUpdate={setCurrentTime}
+              onDurationChange={() => {}}
             />
-          )}
+          </div>
+          {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
         </div>
 
-        {/* Segment list */}
-        <div className="flex-1 overflow-auto px-3 pb-3">
-          <div className="rounded-lg border border-zinc-800 overflow-hidden">
-            <div className="divide-y divide-zinc-800/50 max-h-40 overflow-auto">
-              {segments.map((seg) => (
-                <SegmentRow key={seg.id} segment={seg} onToggle={handleToggle} onSeek={handleSeek} />
-              ))}
+        {/* Right: Config + Stats + Actions */}
+        <div className="w-52 border-l border-zinc-800 flex flex-col bg-[#0a0a0a] shrink-0 overflow-y-auto">
+          <ConfigPanel settings={settings} onChange={handleConfigChange} disabled={detecting} />
+
+          <div className="p-3 space-y-1.5 border-b border-zinc-800">
+            <div className="flex justify-between text-xs">
+              <span className="text-zinc-500">Segments</span>
+              <span className="text-zinc-300">{segments.length}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-zinc-500">Keep</span>
+              <span className="text-emerald-400">{keptCount}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-zinc-500">Remove</span>
+              <span className="text-red-400">{removedCount}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-zinc-500">Output</span>
+              <span className="text-zinc-300">{(keptDuration / 1000).toFixed(1)}s</span>
             </div>
           </div>
-        </div>
 
-        {/* Error */}
-        {error && <p className="px-3 pb-2 text-xs text-red-400">{error}</p>}
+          <div className="p-3 space-y-2 mt-auto">
+            <button
+              onClick={() => runDetection(settings)}
+              disabled={detecting}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-50 transition-colors"
+            >
+              <RotateCcw size={12} />
+              {detecting ? "Detecting..." : "Re-detect"}
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={exporting || keptCount === 0}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md bg-accent text-white hover:bg-accent/80 disabled:opacity-50 transition-colors"
+            >
+              <Download size={12} />
+              {exporting ? "Exporting..." : exportDone ? "Done!" : "Export"}
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Right panel: config + actions */}
-      <div className="w-56 border-l border-zinc-800 flex flex-col bg-[#0a0a0a]">
-        <ConfigPanel settings={settings} onChange={handleConfigChange} disabled={detecting} />
-
-        {/* Stats */}
-        <div className="p-3 space-y-1.5 border-b border-zinc-800">
-          <div className="flex justify-between text-xs">
-            <span className="text-zinc-500">Segments</span>
-            <span className="text-zinc-300">{segments.length}</span>
+      {/* Bottom: Timeline (full width, like CapCut) */}
+      <div className="shrink-0 border-t border-zinc-800 bg-[#0a0a0a] px-4 py-3">
+        {detecting ? (
+          <div className="h-16 flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800">
+            <span className="text-xs text-zinc-500 animate-pulse">Analyzing audio...</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-zinc-500">Keep</span>
-            <span className="text-emerald-400">{keptCount}</span>
-          </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-zinc-500">Remove</span>
-            <span className="text-red-400">{removedCount}</span>
-          </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-zinc-500">Output duration</span>
-            <span className="text-zinc-300">{(keptDuration / 1000).toFixed(1)}s</span>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="p-3 space-y-2 mt-auto">
-          <button
-            onClick={() => runDetection(settings)}
-            disabled={detecting}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-50 transition-colors"
-          >
-            <RotateCcw size={12} />
-            {detecting ? "Detecting..." : "Re-detect"}
-          </button>
-          <button
-            onClick={handleExport}
-            disabled={exporting || keptCount === 0}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs rounded-md bg-accent text-white hover:bg-accent/80 disabled:opacity-50 transition-colors"
-          >
-            <Download size={12} />
-            {exporting ? "Exporting..." : exportDone ? "Done!" : "Export"}
-          </button>
-        </div>
+        ) : (
+          <Timeline
+            segments={segments}
+            duration={duration}
+            currentTime={currentTime}
+            onSeek={setCurrentTime}
+            onToggleSegment={handleToggle}
+          />
+        )}
       </div>
     </div>
   );
-}
-
-function SegmentRow({ segment, onToggle, onSeek }: { segment: SegmentDto; onToggle: (id: string) => void; onSeek: (ms: number) => void }) {
-  const isSpeech = segment.type === "speech";
-  return (
-    <div
-      className={`flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-zinc-800/50 transition-colors ${segment.is_removed ? "opacity-40" : ""}`}
-      onClick={() => onSeek(segment.start_ms)}
-    >
-      <div className={`w-1.5 h-1.5 rounded-full ${isSpeech ? "bg-emerald-500" : "bg-zinc-600"}`} />
-      <span className="text-zinc-400 font-mono">
-        {formatMs(segment.start_ms)}-{formatMs(segment.end_ms)}
-      </span>
-      <span className="text-zinc-600">{isSpeech ? "Speech" : "Silence"}</span>
-      <span className="ml-auto text-zinc-600">{((segment.end_ms - segment.start_ms) / 1000).toFixed(1)}s</span>
-      <button
-        onClick={(e) => { e.stopPropagation(); onToggle(segment.id); }}
-        className={`px-1.5 py-0.5 rounded text-xs ${segment.is_removed ? "text-emerald-400 hover:bg-emerald-900/30" : "text-red-400 hover:bg-red-900/30"}`}
-      >
-        {segment.is_removed ? "restore" : "cut"}
-      </button>
-    </div>
-  );
-}
-
-function formatMs(ms: number): string {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  return `${m}:${(s % 60).toString().padStart(2, "0")}`;
 }
