@@ -20,6 +20,7 @@ export function EditorLayout() {
   const [currentTime, setCurrentTime] = useState(0);
   const [showExport, setShowExport] = useState(false);
   const [captioning, setCaptioning] = useState(false);
+  const [captions, setCaptions] = useState<{text: string; start_ms: number; end_ms: number}[]>([]);
   const [settings, setSettings] = useState<DetectionSettings>({ threshold: 0.5, minSilenceDurationMs: 500, speechPadMs: 100 });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipLock = useRef(false);
@@ -90,6 +91,7 @@ export function EditorLayout() {
       const res = await fetch(`http://localhost:18420/project/${projectId}/transcribe`, { method: "POST", headers: { "Content-Type": "application/json" } });
       if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
       const data = await res.json();
+      setCaptions(data.chunks);
       showToast(`Captions generated: ${data.chunks.length} segments`, "success");
     } catch (e) { showToast(e instanceof Error ? e.message : "Caption failed"); }
     finally { setCaptioning(false); }
@@ -131,8 +133,17 @@ export function EditorLayout() {
 
             <Panel defaultSize={60} minSize={30}>
               <div className="flex flex-col h-full bg-[#0d0d0d]">
-                <div className="flex-1 flex items-center justify-center p-2 min-h-0">
+                <div className="flex-1 flex items-center justify-center p-2 min-h-0 relative">
                   <video ref={videoRef} src={`http://localhost:18420/file?path=${encodeURIComponent(videoPath)}`} className="max-h-full max-w-full rounded shadow-2xl" preload="metadata" />
+                  {/* Caption overlay */}
+                  {captions.length > 0 && (() => {
+                    const active = captions.find((c) => currentTime >= c.start_ms && currentTime <= c.end_ms);
+                    return active ? (
+                      <div className="absolute bottom-14 left-1/2 -translate-x-1/2 px-3 py-1 rounded bg-black/80 text-white text-sm max-w-lg text-center">
+                        {active.text}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
                 <div className="flex items-center justify-center gap-3 py-1.5 border-t border-zinc-800/30">
                   <button onClick={() => setPreviewMode(!previewMode)} className={`p-1 rounded transition-colors ${previewMode ? "text-accent" : "text-zinc-600 hover:text-zinc-400"}`} title="Preview mode">
