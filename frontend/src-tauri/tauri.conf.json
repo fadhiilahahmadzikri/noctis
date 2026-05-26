@@ -59,6 +59,6 @@
         "sidebarImage": null
       }
     },
-    "externalBin": []
+    "externalBin": ["binaries/lethe-server"]
   }
 }
