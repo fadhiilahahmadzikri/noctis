@@ -109,13 +109,13 @@ export function EditorLayout() {
         <Panel defaultSize={62} minSize={35}>
           <Group orientation="horizontal" className="h-full">
             {/* Left: Media library */}
-            <Panel defaultSize={14} minSize={8} maxSize={25}>
+            <Panel defaultSize={15} minSize={12}>
               <MediaLibrary />
             </Panel>
             <Separator className="w-px bg-zinc-800/50 hover:bg-accent/30 transition-colors cursor-col-resize" />
 
             {/* Center: Video */}
-            <Panel defaultSize={66} minSize={40}>
+            <Panel defaultSize={60} minSize={30}>
               <div className="flex flex-col h-full bg-[#0d0d0d]">
                 <div className="flex-1 flex items-center justify-center p-2 min-h-0">
                   <video ref={videoRef} src={`http://localhost:18420/file?path=${encodeURIComponent(videoPath)}`} className="max-h-full max-w-full rounded shadow-2xl" preload="metadata" />
@@ -137,7 +137,7 @@ export function EditorLayout() {
             <Separator className="w-px bg-zinc-800/50 hover:bg-accent/30 transition-colors cursor-col-resize" />
 
             {/* Right: Config */}
-            <Panel defaultSize={20} minSize={12} maxSize={30}>
+            <Panel defaultSize={25} minSize={15}>
               <div className="h-full bg-[#141414] flex flex-col overflow-y-auto scrollbar-none">
                 <ConfigPanel settings={settings} onChange={handleConfigChange} disabled={detecting} duration={duration} outputDuration={keptDuration} />
                 <div className="px-3 pb-2 text-[10px] text-zinc-600">
