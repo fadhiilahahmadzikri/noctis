@@ -13,6 +13,7 @@ router = APIRouter(prefix="/project", tags=["trim"])
 
 class TrimRequest(BaseModel):
     output_path: str
+    resolution: str = "original"  # "original", "1080", "720", "480"
 
 
 @router.post("/{project_id}/trim", response_model=JobResponse)
