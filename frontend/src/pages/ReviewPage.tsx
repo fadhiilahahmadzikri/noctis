@@ -107,6 +107,7 @@ export function ReviewPage() {
             <VideoPlayer
               src={`http://localhost:18420/file?path=${encodeURIComponent(videoPath)}`}
               currentTime={currentTime}
+              segments={segments}
               onTimeUpdate={setCurrentTime}
               onDurationChange={() => {}}
             />

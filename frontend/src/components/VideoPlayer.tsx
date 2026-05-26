@@ -1,24 +1,52 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Eye, EyeOff } from "lucide-react";
+import type { SegmentDto } from "../types/dtos";
 
 interface VideoPlayerProps {
   src: string;
   currentTime: number;
+  segments: SegmentDto[];
   onTimeUpdate: (time: number) => void;
   onDurationChange: (duration: number) => void;
 }
 
-export function VideoPlayer({ src, currentTime, onTimeUpdate, onDurationChange }: VideoPlayerProps) {
+export function VideoPlayer({ src, currentTime, segments, onTimeUpdate, onDurationChange }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null!);
   const [playing, setPlaying] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
+  const skipLock = useRef(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const handler = () => onTimeUpdate(video.currentTime * 1000);
+    const handler = () => {
+      const timeMs = video.currentTime * 1000;
+      onTimeUpdate(timeMs);
+
+      // Preview mode: skip removed segments
+      if (previewMode && !skipLock.current && segments.length > 0) {
+        const currentSeg = segments.find(
+          (s) => timeMs >= s.start_ms && timeMs < s.end_ms
+        );
+        if (currentSeg && currentSeg.is_removed) {
+          // Find next kept segment
+          const nextKept = segments.find(
+            (s) => !s.is_removed && s.start_ms >= currentSeg.end_ms
+          );
+          if (nextKept) {
+            skipLock.current = true;
+            video.currentTime = nextKept.start_ms / 1000;
+            setTimeout(() => { skipLock.current = false; }, 100);
+          } else {
+            video.pause();
+            setPlaying(false);
+          }
+        }
+      }
+    };
     video.addEventListener("timeupdate", handler);
     return () => video.removeEventListener("timeupdate", handler);
-  }, [onTimeUpdate]);
+  }, [onTimeUpdate, previewMode, segments]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -59,17 +87,42 @@ export function VideoPlayer({ src, currentTime, onTimeUpdate, onDurationChange }
         className="w-full aspect-video bg-black"
         preload="metadata"
       />
-      <div className="flex items-center justify-center gap-2 py-2 bg-[#0a0a0a]">
-        <button onClick={() => skip(-5000)} className="p-1.5 text-zinc-400 hover:text-white transition-colors">
-          <SkipBack size={14} />
+      <div className="flex items-center justify-between px-3 py-2 bg-[#0a0a0a]">
+        <button
+          onClick={() => setPreviewMode(!previewMode)}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
+            previewMode
+              ? "bg-accent/20 text-accent border border-accent/40"
+              : "text-zinc-500 hover:text-zinc-300 border border-transparent"
+          }`}
+          title={previewMode ? "Preview mode: skipping removed segments" : "Enable preview (skip removed segments)"}
+        >
+          {previewMode ? <Eye size={12} /> : <EyeOff size={12} />}
+          {previewMode ? "Preview ON" : "Preview"}
         </button>
-        <button onClick={togglePlay} className="p-2 rounded-full bg-zinc-800 text-white hover:bg-zinc-700 transition-colors">
-          {playing ? <Pause size={14} /> : <Play size={14} />}
-        </button>
-        <button onClick={() => skip(5000)} className="p-1.5 text-zinc-400 hover:text-white transition-colors">
-          <SkipForward size={14} />
-        </button>
+
+        <div className="flex items-center gap-1">
+          <button onClick={() => skip(-5000)} className="p-1.5 text-zinc-400 hover:text-white transition-colors">
+            <SkipBack size={14} />
+          </button>
+          <button onClick={togglePlay} className="p-2 rounded-full bg-zinc-800 text-white hover:bg-zinc-700 transition-colors">
+            {playing ? <Pause size={14} /> : <Play size={14} />}
+          </button>
+          <button onClick={() => skip(5000)} className="p-1.5 text-zinc-400 hover:text-white transition-colors">
+            <SkipForward size={14} />
+          </button>
+        </div>
+
+        <span className="text-xs text-zinc-500 font-mono w-16 text-right">
+          {formatTime(currentTime)}
+        </span>
       </div>
     </div>
   );
+}
+
+function formatTime(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  return `${m}:${(s % 60).toString().padStart(2, "0")}`;
 }
