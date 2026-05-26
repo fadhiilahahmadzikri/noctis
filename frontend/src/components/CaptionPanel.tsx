@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { MessageSquareText, Download, Loader2, Key } from "lucide-react";
+import { MessageSquareText, Download, Loader2 } from "lucide-react";
 
 interface TranscriptChunk {
   text: string;
@@ -14,21 +14,17 @@ interface CaptionPanelProps {
 }
 
 export function CaptionPanel({ projectId, currentTime, onSeek }: CaptionPanelProps) {
-  const [token, setToken] = useState(() => localStorage.getItem("hf_token") || "");
   const [chunks, setChunks] = useState<TranscriptChunk[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleTranscribe = useCallback(async () => {
-    if (!token.trim()) { setError("Enter HuggingFace token"); return; }
-    localStorage.setItem("hf_token", token);
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`http://localhost:18420/project/${projectId}/transcribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hf_token: token }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -41,7 +37,7 @@ export function CaptionPanel({ projectId, currentTime, onSeek }: CaptionPanelPro
     } finally {
       setLoading(false);
     }
-  }, [projectId, token]);
+  }, [projectId]);
 
   const exportSRT = useCallback(() => {
     if (chunks.length === 0) return;
@@ -59,42 +55,25 @@ export function CaptionPanel({ projectId, currentTime, onSeek }: CaptionPanelPro
   const activeChunk = chunks.find((c) => currentTime >= c.start_ms && currentTime <= c.end_ms);
 
   return (
-    <div className="h-full flex flex-col bg-[#141414]">
-      {/* Header */}
-      <div className="px-3 py-2 border-b border-zinc-800/50 flex items-center gap-1.5">
-        <MessageSquareText size={11} className="text-zinc-500" />
-        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Caption</span>
-      </div>
-
-      {/* Token input */}
+    <div className="h-full flex flex-col">
+      {/* Generate button */}
       {chunks.length === 0 && (
         <div className="p-3 space-y-2">
-          <div className="flex items-center gap-1.5">
-            <Key size={10} className="text-zinc-600" />
-            <span className="text-[9px] text-zinc-600">HuggingFace Token</span>
-          </div>
-          <input
-            type="password"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="hf_..."
-            className="w-full px-2 py-1.5 rounded text-[10px] bg-zinc-800 border border-zinc-700 text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-accent/50"
-          />
           <button
             onClick={handleTranscribe}
-            disabled={loading || !token.trim()}
-            className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-[10px] rounded bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 disabled:opacity-40 transition-colors"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-1.5 px-2 py-2 text-[10px] rounded bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 disabled:opacity-40 transition-colors"
           >
             {loading ? <Loader2 size={10} className="animate-spin" /> : <MessageSquareText size={10} />}
             {loading ? "Transcribing..." : "Generate Captions"}
           </button>
           <p className="text-[8px] text-zinc-700 leading-tight">
-            Free at huggingface.co/settings/tokens. Uses Whisper large-v3-turbo (their GPU, not yours).
+            Whisper large-v3-turbo via HuggingFace. Set HF_TOKEN env before starting backend.
           </p>
         </div>
       )}
 
-      {/* Transcript chunks */}
+      {/* Transcript */}
       {chunks.length > 0 && (
         <>
           <div className="flex-1 overflow-y-auto scrollbar-none p-2 space-y-0.5">
@@ -125,7 +104,7 @@ export function CaptionPanel({ projectId, currentTime, onSeek }: CaptionPanelPro
         </>
       )}
 
-      {/* Active caption overlay text */}
+      {/* Active caption */}
       {activeChunk && (
         <div className="px-3 py-1.5 border-t border-zinc-800/50 bg-black/30">
           <p className="text-[11px] text-white text-center">{activeChunk.text}</p>
@@ -139,8 +118,7 @@ export function CaptionPanel({ projectId, currentTime, onSeek }: CaptionPanelPro
 
 function fmtMs(ms: number): string {
   const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  return `${m}:${(s % 60).toString().padStart(2, "0")}`;
+  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 }
 
 function toSrt(ms: number): string {

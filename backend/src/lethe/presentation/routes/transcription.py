@@ -1,21 +1,24 @@
 """Transcription endpoint — auto-caption via HuggingFace Whisper."""
 
+import os
 from uuid import UUID
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 
 from lethe.infrastructure.di.container import container
 
 router = APIRouter(prefix="/project", tags=["transcription"])
 
 
-class TranscribeRequest(BaseModel):
-    hf_token: str
+class TranscriptChunkResponse:
+    pass
 
 
-class TranscriptChunkResponse(BaseModel):
+from pydantic import BaseModel
+
+
+class TranscriptChunkResponse(BaseModel):  # type: ignore[no-redef]
     text: str
     start_ms: int
     end_ms: int
@@ -27,8 +30,12 @@ class TranscribeResponse(BaseModel):
 
 
 @router.post("/{project_id}/transcribe", response_model=TranscribeResponse)
-async def transcribe_project(project_id: str, request: TranscribeRequest) -> TranscribeResponse:
-    """Transcribe video audio using HuggingFace Whisper API."""
+async def transcribe_project(project_id: str) -> TranscribeResponse:
+    """Transcribe video audio using HuggingFace Whisper API. Token from HF_TOKEN env."""
+    token = os.environ.get("HF_TOKEN", "")
+    if not token:
+        raise HTTPException(status_code=400, detail="HF_TOKEN environment variable not set")
+
     try:
         pid = UUID(project_id)
     except ValueError:
@@ -43,7 +50,7 @@ async def transcribe_project(project_id: str, request: TranscribeRequest) -> Tra
 
     from lethe.infrastructure.transcription import HuggingFaceTranscriber
 
-    transcriber = HuggingFaceTranscriber(api_token=request.hf_token)
+    transcriber = HuggingFaceTranscriber(api_token=token)
 
     try:
         chunks = transcriber.transcribe(project.source_path)
