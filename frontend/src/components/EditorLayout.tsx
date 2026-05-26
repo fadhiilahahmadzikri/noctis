@@ -23,7 +23,6 @@ export function EditorLayout() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipLock = useRef(false);
 
-  // Detection
   const runDetection = useCallback(async (config: DetectionSettings) => {
     if (!projectId) return;
     setDetecting(true); setError(null);
@@ -43,7 +42,6 @@ export function EditorLayout() {
     debounceRef.current = setTimeout(() => runDetection(s), 800);
   }, [runDetection]);
 
-  // Video controls
   const togglePlay = useCallback(() => {
     const v = videoRef.current; if (!v) return;
     if (v.paused) { v.play(); setPlaying(true); } else { v.pause(); setPlaying(false); }
@@ -54,7 +52,6 @@ export function EditorLayout() {
     v.currentTime = ms / 1000; setCurrentTime(ms);
   }, []);
 
-  // Time update + preview skip
   useEffect(() => {
     const v = videoRef.current; if (!v) return;
     const handler = () => {
@@ -72,7 +69,6 @@ export function EditorLayout() {
     return () => v.removeEventListener("timeupdate", handler);
   }, [previewMode, segments]);
 
-  // Segment actions
   const handleToggle = useCallback(async (segId: string) => {
     if (!projectId) return;
     const seg = segments.find((s) => s.id === segId); if (!seg) return;
@@ -86,17 +82,17 @@ export function EditorLayout() {
     updateSegment({ ...seg, start_ms: Math.round(start), end_ms: Math.round(end) });
   }, [segments, updateSegment, pushState]);
 
-  // Keyboard
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.code === "Space" && !e.ctrlKey) { e.preventDefault(); togglePlay(); }
+      if (e.code === "Space" && !e.ctrlKey && e.target === document.body) { e.preventDefault(); togglePlay(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [togglePlay]);
 
+  const keptDuration = segments.filter((s) => !s.is_removed).reduce((a, s) => a + (s.end_ms - s.start_ms), 0);
+
   if (!projectId || !videoPath) {
-    // Show empty editor with media library
     return (
       <div className="h-full flex">
         <div className="w-48 shrink-0"><MediaLibrary /></div>
@@ -107,69 +103,64 @@ export function EditorLayout() {
     );
   }
 
-  const keptDuration = segments.filter((s) => !s.is_removed).reduce((a, s) => a + (s.end_ms - s.start_ms), 0);
-
   return (
     <>
       <Group orientation="vertical" className="h-full">
-        {/* Top: Video preview + right config */}
         <Panel defaultSize={62} minSize={35}>
-          <div className="flex h-full">
+          <Group orientation="horizontal" className="h-full">
             {/* Left: Media library */}
-            <div className="w-48 shrink-0">
+            <Panel defaultSize={14} minSize={8} maxSize={25}>
               <MediaLibrary />
-            </div>
+            </Panel>
+            <Separator className="w-px bg-zinc-800/50 hover:bg-accent/30 transition-colors cursor-col-resize" />
 
-            {/* Video area */}
-            <div className="flex-1 flex flex-col bg-[#0d0d0d] min-w-0">
-              {/* Video */}
-              <div className="flex-1 flex items-center justify-center p-2 min-h-0">
-                <video
-                  ref={videoRef}
-                  src={`http://localhost:18420/file?path=${encodeURIComponent(videoPath)}`}
-                  className="max-h-full max-w-full rounded shadow-2xl"
-                  preload="metadata"
-                />
+            {/* Center: Video */}
+            <Panel defaultSize={66} minSize={40}>
+              <div className="flex flex-col h-full bg-[#0d0d0d]">
+                <div className="flex-1 flex items-center justify-center p-2 min-h-0">
+                  <video ref={videoRef} src={`http://localhost:18420/file?path=${encodeURIComponent(videoPath)}`} className="max-h-full max-w-full rounded shadow-2xl" preload="metadata" />
+                </div>
+                {/* Transport */}
+                <div className="flex items-center justify-center gap-3 py-1.5 border-t border-zinc-800/30">
+                  <button onClick={() => setPreviewMode(!previewMode)} className={`p-1 rounded transition-colors ${previewMode ? "text-accent" : "text-zinc-600 hover:text-zinc-400"}`} title="Preview (skip removed)">
+                    {previewMode ? <Eye size={13} /> : <EyeOff size={13} />}
+                  </button>
+                  <button onClick={() => seek(Math.max(0, currentTime - 5000))} className="p-1 text-zinc-500 hover:text-white"><SkipBack size={13} /></button>
+                  <button onClick={togglePlay} className="p-2 rounded-full bg-zinc-800 text-white hover:bg-zinc-700">
+                    {playing ? <Pause size={13} /> : <Play size={13} />}
+                  </button>
+                  <button onClick={() => seek(Math.min(duration, currentTime + 5000))} className="p-1 text-zinc-500 hover:text-white"><SkipForward size={13} /></button>
+                  <span className="text-[10px] text-zinc-500 font-mono tabular-nums">{fmtTime(currentTime)} / {fmtTime(duration)}</span>
+                </div>
               </div>
-              {/* Transport bar */}
-              <div className="flex items-center justify-center gap-3 py-2 border-t border-zinc-800/50">
-                <button onClick={() => setPreviewMode(!previewMode)} className={`p-1.5 rounded transition-colors ${previewMode ? "text-accent" : "text-zinc-600 hover:text-zinc-400"}`} title="Preview mode">
-                  {previewMode ? <Eye size={14} /> : <EyeOff size={14} />}
-                </button>
-                <button onClick={() => seek(Math.max(0, currentTime - 5000))} className="p-1.5 text-zinc-500 hover:text-white transition-colors"><SkipBack size={14} /></button>
-                <button onClick={togglePlay} className="p-2.5 rounded-full bg-zinc-800 text-white hover:bg-zinc-700 transition-colors">
-                  {playing ? <Pause size={14} /> : <Play size={14} />}
-                </button>
-                <button onClick={() => seek(Math.min(duration, currentTime + 5000))} className="p-1.5 text-zinc-500 hover:text-white transition-colors"><SkipForward size={14} /></button>
-                <span className="text-[11px] text-zinc-500 font-mono tabular-nums ml-2">{fmtTime(currentTime)} / {fmtTime(duration)}</span>
-              </div>
-            </div>
+            </Panel>
+            <Separator className="w-px bg-zinc-800/50 hover:bg-accent/30 transition-colors cursor-col-resize" />
 
-            {/* Right panel */}
-            <div className="w-44 border-l border-zinc-800/50 bg-[#141414] flex flex-col shrink-0 overflow-y-auto scrollbar-none">
-              <ConfigPanel settings={settings} onChange={handleConfigChange} disabled={detecting} />
-              <div className="px-3 py-2 space-y-1 text-[10px] border-b border-zinc-800/50">
-                <div className="flex justify-between"><span className="text-zinc-600">Segments</span><span className="text-zinc-400">{segments.length}</span></div>
-                <div className="flex justify-between"><span className="text-zinc-600">Output</span><span className="text-zinc-400">{(keptDuration / 1000).toFixed(1)}s</span></div>
+            {/* Right: Config */}
+            <Panel defaultSize={20} minSize={12} maxSize={30}>
+              <div className="h-full bg-[#141414] flex flex-col overflow-y-auto scrollbar-none">
+                <ConfigPanel settings={settings} onChange={handleConfigChange} disabled={detecting} duration={duration} outputDuration={keptDuration} />
+                <div className="px-3 pb-2 text-[10px] text-zinc-600">
+                  {segments.length} segments
+                </div>
+                <div className="p-2.5 mt-auto space-y-1.5 border-t border-zinc-800/50">
+                  <button onClick={() => runDetection(settings)} disabled={detecting} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] rounded bg-zinc-800 text-zinc-400 hover:bg-zinc-700 disabled:opacity-40 transition-colors">
+                    <RotateCcw size={10} />{detecting ? "..." : "Re-detect"}
+                  </button>
+                  <button onClick={() => setShowExport(true)} className="w-full flex items-center justify-center gap-1 px-2 py-2 text-[11px] rounded-md bg-accent text-white hover:bg-accent/80 transition-colors font-medium">
+                    <Download size={12} /> Export
+                  </button>
+                </div>
               </div>
-              <div className="p-2.5 mt-auto space-y-1.5">
-                <button onClick={() => runDetection(settings)} disabled={detecting} className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] rounded bg-zinc-800 text-zinc-400 hover:bg-zinc-700 disabled:opacity-40 transition-colors">
-                  <RotateCcw size={10} />{detecting ? "..." : "Re-detect"}
-                </button>
-                <button onClick={() => setShowExport(true)} className="w-full flex items-center justify-center gap-1 px-2 py-2 text-[11px] rounded-md bg-accent text-white hover:bg-accent/80 transition-colors font-medium">
-                  <Download size={12} /> Export
-                </button>
-              </div>
-            </div>
-          </div>
+            </Panel>
+          </Group>
         </Panel>
 
         <Separator className="h-1 bg-[#0a0a0a] hover:bg-accent/30 transition-colors cursor-row-resize flex items-center justify-center">
           <div className="w-8 h-0.5 rounded-full bg-zinc-700" />
         </Separator>
 
-        {/* Bottom: Timeline */}
-        <Panel defaultSize={38} minSize={20}>
+        <Panel defaultSize={38} minSize={18}>
           <div className="h-full bg-[#0d0d0d] px-2 py-1.5 overflow-hidden">
             {detecting ? (
               <div className="h-full flex items-center justify-center">
@@ -182,7 +173,7 @@ export function EditorLayout() {
         </Panel>
       </Group>
 
-      {error && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded bg-red-900/80 text-red-200 text-xs">{error}</div>}
+      {error && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded bg-red-900/80 text-red-200 text-xs z-50">{error}</div>}
       {showExport && <ExportDialog projectId={projectId} videoPath={videoPath} onClose={() => setShowExport(false)} />}
     </>
   );
