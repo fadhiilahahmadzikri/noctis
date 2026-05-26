@@ -69,8 +69,10 @@ export function EditorLayout() {
         }
       }
     };
+    const onEnded = () => setPlaying(false);
     v.addEventListener("timeupdate", handler);
-    return () => v.removeEventListener("timeupdate", handler);
+    v.addEventListener("ended", onEnded);
+    return () => { v.removeEventListener("timeupdate", handler); v.removeEventListener("ended", onEnded); };
   }, [previewMode, segments]);
 
   const handleToggle = useCallback(async (segId: string) => {
