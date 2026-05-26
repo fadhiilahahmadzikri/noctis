@@ -1,8 +1,10 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Minus, Square, X, Undo2, Redo2 } from "lucide-react";
+import { Minus, Square, X, Undo2, Redo2, Settings } from "lucide-react";
+import { useState } from "react";
 import { useAppStore } from "../stores/appStore";
 import { useProjectStore } from "../stores/projectStore";
 import { useHistoryStore } from "../stores/historyStore";
+import { SettingsModal } from "./SettingsModal";
 
 export function Titlebar() {
   const appWindow = getCurrentWindow();
@@ -10,6 +12,7 @@ export function Titlebar() {
   const videoPath = useProjectStore((s) => s.videoPath);
   const setSegments = useProjectStore((s) => s.setSegments);
   const { undo, redo, canUndo, canRedo } = useHistoryStore();
+  const [showSettings, setShowSettings] = useState(false);
 
   const projectName = videoPath ? videoPath.split(/[/\\]/).pop() : "Lethe";
 
@@ -42,8 +45,11 @@ export function Titlebar() {
         </button>
       </div>
 
-      {/* Right: window controls */}
+      {/* Right: settings + window controls */}
       <div className="flex h-full">
+        <button onClick={() => setShowSettings(true)} className="w-10 h-full flex items-center justify-center text-zinc-500 hover:bg-zinc-700/50 transition-colors" title="Settings">
+          <Settings size={13} />
+        </button>
         <button onClick={() => appWindow.minimize()} className="w-10 h-full flex items-center justify-center text-zinc-500 hover:bg-zinc-700/50 transition-colors">
           <Minus size={13} />
         </button>
@@ -54,6 +60,7 @@ export function Titlebar() {
           <X size={13} />
         </button>
       </div>
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </header>
   );
 }
