@@ -22,8 +22,8 @@ export function EditorLayout() {
   const [showExport, setShowExport] = useState(false);
   const [captioning, setCaptioning] = useState(false);
   const [captions, setCaptions] = useState<{text: string; start_ms: number; end_ms: number}[]>([]);
-  const [captionPos, setCaptionPos] = useState({ x: 0, y: 0 });
-  const [captionSize, setCaptionSize] = useState({ w: 400, h: 50 });
+  const [captionPos, setCaptionPos] = useState({ x: -1, y: -1 }); // -1 = auto center
+  const [captionSize, setCaptionSize] = useState({ w: 500, h: 40 });
   const [captionFontSize, setCaptionFontSize] = useState(14);
   const [settings, setSettings] = useState<DetectionSettings>({ threshold: 0.5, minSilenceDurationMs: 500, speechPadMs: 100 });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,6 +96,13 @@ export function EditorLayout() {
       if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
       const data = await res.json();
       setCaptions(data.chunks);
+      // Position caption at bottom-center of video
+      const parent = videoRef.current?.parentElement;
+      if (parent) {
+        const pw = parent.clientWidth;
+        const ph = parent.clientHeight;
+        setCaptionPos({ x: (pw - captionSize.w) / 2, y: ph - captionSize.h - 60 });
+      }
       showToast(`Captions generated: ${data.chunks.length} segments`, "success");
     } catch (e) { showToast(e instanceof Error ? e.message : "Caption failed"); }
     finally { setCaptioning(false); }
@@ -139,40 +146,72 @@ export function EditorLayout() {
               <div className="flex flex-col h-full bg-[#0d0d0d]">
                 <div className="flex-1 flex items-center justify-center p-2 min-h-0 relative">
                   <video ref={videoRef} src={`http://localhost:18420/file?path=${encodeURIComponent(videoPath)}`} className="max-h-full max-w-full rounded shadow-2xl" preload="metadata" />
-                  {/* Caption overlay — draggable, resizable, karaoke */}
+                  {/* Caption overlay — draggable with snap guides */}
                   {captions.length > 0 && (() => {
                     const windowStart = Math.max(0, currentTime - 500);
                     const windowEnd = currentTime + 2500;
                     const visible = captions.filter((c) => c.end_ms >= windowStart && c.start_ms <= windowEnd);
                     if (visible.length === 0) return null;
+
+                    // Snap guide visibility
+                    const parentEl = videoRef.current?.parentElement;
+                    const parentW = parentEl?.clientWidth || 800;
+                    const parentH = parentEl?.clientHeight || 450;
+                    const centerX = (parentW - captionSize.w) / 2;
+                    const centerY = (parentH - captionSize.h) / 2;
+                    const isSnappedX = Math.abs(captionPos.x - centerX) < 8;
+                    const isSnappedY = Math.abs(captionPos.y - centerY) < 8;
+
                     return (
-                      <Rnd
-                        position={{ x: captionPos.x, y: captionPos.y }}
-                        size={{ width: captionSize.w, height: captionSize.h }}
-                        onDragStop={(_e, d) => setCaptionPos({ x: d.x, y: d.y })}
-                        onResizeStop={(_e, _dir, ref) => setCaptionSize({ w: parseInt(ref.style.width), h: parseInt(ref.style.height) })}
-                        bounds="parent"
-                        className="z-20"
-                        minWidth={150}
-                        minHeight={30}
-                      >
-                        <div
-                          className="w-full h-full flex items-center justify-center px-3 rounded-lg bg-black/70 cursor-move select-none overflow-hidden"
-                          onWheel={(e) => { e.stopPropagation(); setCaptionFontSize((s) => Math.max(8, Math.min(32, s + (e.deltaY > 0 ? -1 : 1)))); }}
+                      <>
+                        {/* Snap guides */}
+                        {isSnappedX && <div className="absolute top-0 bottom-0 left-1/2 w-px bg-red-500/60 z-30 pointer-events-none" />}
+                        {isSnappedY && <div className="absolute left-0 right-0 top-1/2 h-px bg-red-500/60 z-30 pointer-events-none" />}
+
+                        <Rnd
+                          position={{ x: captionPos.x, y: captionPos.y }}
+                          size={{ width: captionSize.w, height: captionSize.h }}
+                          onDrag={(_e, d) => {
+                            // Snap to center
+                            const sx = Math.abs(d.x - centerX) < 12 ? centerX : d.x;
+                            const sy = Math.abs(d.y - centerY) < 12 ? centerY : d.y;
+                            setCaptionPos({ x: sx, y: sy });
+                          }}
+                          onDragStop={(_e, d) => {
+                            const sx = Math.abs(d.x - centerX) < 12 ? centerX : d.x;
+                            const sy = Math.abs(d.y - centerY) < 12 ? centerY : d.y;
+                            setCaptionPos({ x: sx, y: sy });
+                          }}
+                          onResize={(_e, _dir, ref) => {
+                            const w = parseInt(ref.style.width);
+                            const h = parseInt(ref.style.height);
+                            setCaptionSize({ w, h });
+                            // Scale font proportionally
+                            setCaptionFontSize(Math.max(8, Math.min(48, Math.round(h * 0.4))));
+                          }}
+                          onResizeStop={(_e, _dir, ref) => {
+                            setCaptionSize({ w: parseInt(ref.style.width), h: parseInt(ref.style.height) });
+                          }}
+                          bounds="parent"
+                          className="z-20"
+                          minWidth={100}
+                          minHeight={24}
                         >
-                          <p className="text-center leading-snug" style={{ fontSize: `${captionFontSize}px` }}>
-                            {visible.map((w, i) => {
-                              const isActive = currentTime >= w.start_ms && currentTime <= w.end_ms;
-                              const isPast = currentTime > w.end_ms;
-                              return (
-                                <span key={i} className={isActive ? "text-accent font-bold" : isPast ? "text-white" : "text-white/40"}>
-                                  {w.text}{" "}
-                                </span>
-                              );
-                            })}
-                          </p>
-                        </div>
-                      </Rnd>
+                          <div className="w-full h-full flex items-center justify-center px-2 rounded bg-black/70 cursor-move select-none overflow-hidden border border-transparent hover:border-accent/40 transition-colors">
+                            <p className="text-center whitespace-nowrap overflow-hidden text-ellipsis" style={{ fontSize: `${captionFontSize}px` }}>
+                              {visible.map((w, i) => {
+                                const isActive = currentTime >= w.start_ms && currentTime <= w.end_ms;
+                                const isPast = currentTime > w.end_ms;
+                                return (
+                                  <span key={i} className={isActive ? "text-accent font-bold" : isPast ? "text-white" : "text-white/40"}>
+                                    {w.text}{" "}
+                                  </span>
+                                );
+                              })}
+                            </p>
+                          </div>
+                        </Rnd>
+                      </>
                     );
                   })()}
                 </div>
